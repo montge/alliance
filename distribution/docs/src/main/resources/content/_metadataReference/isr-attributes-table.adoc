@@ -46,7 +46,7 @@
 |ISORCE per STANAG 4545
 |_If the Source of the data is
   classified, then the description shall be preceded by the
-  classification, including Codeword(s) contained in Table
+  classification, including Codewords contained in Table
   C-1-4 and C-1-4(A). If the value of this field is all ECS
   Spaces (code 0x20), it shall imply that no Image Source
   data applies._
@@ -300,7 +300,7 @@ ALPHA4='C'
 |
 
 |[[_isr.tdl-track-number]]isr.tdl-track-number
-|Link 16 J Series track number for the track found in the product. The track number shall be in the decoded 5-character format (e.g. EK627).
+|Link 16 J Series track number for the track found in the product. The track number shall be in the decoded 5-character format (for example, `EK627`).
 |String
 |<= 10 characters
 |
