@@ -259,6 +259,28 @@ distribution/test/performance/
    - `docs/security/SECURITY-TESTING.md` - Testing approach
    - `docs/security/REMEDIATION-STATUS.md` - Current state
 
+#### Security Posture Hardening (Preparation for Phase 3)
+**Current State:** OWASP configured with `-DfailBuildOnCVSS=11` (permissive - for documentation phase)
+
+**Phase 2 End Goal:** Harden security enforcement for Phase 3 remediation work
+
+1. **Update OWASP Configuration:**
+   - Current: `-DfailBuildOnCVSS=11` (never fails, documents all)
+   - Phase 3 Target: `-DfailBuildOnCVSS=7.0` (fail on HIGH severity)
+   - Rationale: Once test harnesses are in place and fixes implemented, enforce that new HIGH/CRITICAL vulnerabilities block builds
+
+2. **Update GitHub Actions Workflows:**
+   - `.github/workflows/security-scan.yml` - Lower threshold to CVSS 7.0
+   - Add CVSS 9.0+ as blocking for Critical severity
+   - Configure to fail PR builds if new HIGH+ vulnerabilities introduced
+
+3. **Document Security Policy:**
+   - Create `docs/security/SECURITY-POLICY.md`
+   - Define acceptable CVSS thresholds
+   - Remediation SLAs: Critical (7 days), High (30 days), Medium (90 days)
+
+**Note:** This configuration change happens at END of Phase 2, not beginning. We need permissive settings to document and test all 220 vulnerabilities first.
+
 #### Deliverables
 - [ ] All Phase 2 documentation complete
 - [ ] Test coverage at 80%+ overall
