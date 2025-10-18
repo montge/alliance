@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Alliance main application
+  alliance:
+    container_name: alliance_e2e
+    image: alliance:${ALLIANCE_VERSION:-latest}
+    build:
+      context: ../../../../distribution/alliance/target
+      dockerfile: Dockerfile
+    ports:
+      - "${ALLIANCE_HTTPS_PORT:-8993}:8993"  # HTTPS
+      - "${ALLIANCE_HTTP_PORT:-8181}:8181"   # HTTP (admin)
+      - "${ALLIANCE_DEBUG_PORT:-5005}:5005"  # Debug port (optional)
+    environment:
+      # Java options
+      - JAVA_MAX_MEM=${ALLIANCE_MAX_MEM:-4096}m
+      - JAVA_OPTS=-Xmx${ALLIANCE_MAX_MEM:-4096}m -Xms1024m -XX:+UseG1GC
+      # Alliance configuration
+      - ALLIANCE_HOME=/opt/alliance
+      # Debugging (set ENABLE_DEBUG=true to enable)
+      - DEBUG=${ENABLE_DEBUG:-false}
+      - DEBUG_PORT=5005
+    volumes:
+      # Mount logs for debugging
+      - alliance-logs:/opt/alliance/data/log
+      # Mount test fixtures
+      - ../fixtures:/test-fixtures:ro
+    networks:
+      - alliance-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:8993/services"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 2m
+    depends_on:
+      - solr
+
+  # Solr (catalog backend)
+  solr:
+    container_name: solr_e2e
+    image: solr:8.11
+    ports:
+      - "${SOLR_PORT:-8983}:8983"
+    environment:
+      - SOLR_JAVA_MEM=-Xms512m -Xmx1024m
+    volumes:
+      - solr-data:/var/solr
+    networks:
+      - alliance-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Mock external services for testing
+  # wiremock:
+  #   container_name: wiremock_e2e
+  #   image: wiremock/wiremock:latest
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./wiremock/mappings:/home/wiremock/mappings
+  #     - ./wiremock/files:/home/wiremock/__files
+  #   networks:
+  #     - alliance-network
+
+networks:
+  alliance-network:
+    driver: bridge
+
+volumes:
+  alliance-logs:
+  solr-data:
