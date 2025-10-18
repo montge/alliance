@@ -71,8 +71,12 @@ See `github.com/montge/stratux` for example of DO-278 approach with test-driven 
 ## Build Commands
 
 ### Requirements
-- Java 8 (J2SE 8 SDK)
-- Maven 3.1.0 or later
+- **Java 11 or later** (LTS versions recommended)
+  - **Minimum**: Java 11 (LTS)
+  - **Recommended**: Java 17 (LTS) - per SYS-PLT-002
+  - **Supported**: Java 21 (latest LTS)
+  - **Tested**: Java 11, 17, 21 in CI/CD
+- Maven 3.1.0 or later (3.9.5+ recommended)
 - Set `JAVA_HOME` and `MAVEN_OPTS` environment variables
 
 ### Standard Build
@@ -328,6 +332,25 @@ Tasks:
    - Software Verification Plan (SVP)
    - Software Configuration Management Plan (SCMP)
    - Software Quality Assurance Plan (SQAP)
+
+6. Java Language Features and Security Audit:
+   - **Prerequisite**: Complete Phase 2 (80%+ coverage achieved)
+   - Audit codebase for effective use of modern Java features (Java 11-21)
+   - Identify opportunities to leverage:
+     - Java 11+: Local-Variable Type Inference (var), HTTP Client API, improved Optional
+     - Java 17: Pattern Matching, Sealed Classes, Records, Text Blocks
+     - Java 21: Virtual Threads, Pattern Matching enhancements, Sequenced Collections
+   - Security-critical feature adoption:
+     - Strong encapsulation (modules/JPMS where beneficial)
+     - Improved cryptographic APIs
+     - Security Manager deprecation migration
+     - Randomness improvements (SecureRandom enhancements)
+   - Performance optimizations:
+     - Garbage Collector improvements (G1GC, ZGC considerations)
+     - JVM performance monitoring and tuning
+     - Compiler optimizations and inlining opportunities
+   - Create migration plan for adopting beneficial features
+   - Document rationale for Java version minimum (currently 11)
 
 ### Phase 4: Package Distribution
 **Status:** NOT STARTED

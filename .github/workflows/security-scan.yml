@@ -22,18 +22,23 @@ permissions:
 jobs:
   # OWASP Dependency Check - identifies known vulnerabilities in dependencies
   dependency-check:
-    name: OWASP Dependency Check
+    name: OWASP Dependency Check (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Test security on all supported Java versions per SYS-PLT-002
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Setup Maven
@@ -60,7 +65,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: owasp-dependency-check-report
+          name: owasp-dependency-check-report-java-${{ matrix.java-version }}
           path: target/dependency-check-report.html
           retention-days: 30
 
@@ -98,13 +103,15 @@ jobs:
 
   # CodeQL Analysis - semantic code analysis for security vulnerabilities
   codeql-analysis:
-    name: CodeQL Security Analysis
+    name: CodeQL Security Analysis (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
         language: ['java']
+        # Test security analysis on all supported Java versions per SYS-PLT-002
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
@@ -116,11 +123,11 @@ jobs:
           languages: ${{ matrix.language }}
           queries: security-extended,security-and-quality
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Build for CodeQL analysis
@@ -171,18 +178,23 @@ jobs:
 
   # License compliance check
   license-check:
-    name: License Compliance
+    name: License Compliance (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Test license compliance on all supported Java versions per SYS-PLT-002
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Check license headers (checkstyle)
@@ -196,7 +208,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: license-compliance-report
+          name: license-compliance-report-java-${{ matrix.java-version }}
           path: target/checkstyle-result.xml
           retention-days: 30
 

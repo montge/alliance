@@ -22,9 +22,14 @@ env:
 jobs:
   # Quick validation job for PRs
   validate:
-    name: Validate Build
+    name: Validate Build (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+
+    strategy:
+      matrix:
+        # Test on Java LTS versions per SYS-PLT-002
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
@@ -32,11 +37,11 @@ jobs:
         with:
           fetch-depth: 0  # Need full history for incremental build
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Setup Maven
@@ -52,10 +57,15 @@ jobs:
 
   # Incremental build for pull requests
   incremental-build:
-    name: Incremental Build (PR)
+    name: Incremental Build (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
     needs: validate
     if: github.event_name == 'pull_request'
+
+    strategy:
+      matrix:
+        # Test on Java LTS versions per SYS-PLT-002
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
@@ -63,11 +73,11 @@ jobs:
         with:
           fetch-depth: 0  # Full history needed for gitflow-incremental-builder
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Setup Maven
@@ -99,7 +109,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-incremental
+          name: test-results-incremental-java-${{ matrix.java-version }}
           path: |
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
@@ -107,25 +117,26 @@ jobs:
 
   # Full build for main branches
   full-build:
-    name: Full Build
-    runs-on: ubuntu-latest
+    name: Full Build (Java ${{ matrix.java-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     if: github.event_name != 'pull_request'
 
     strategy:
       matrix:
-        # Platform testing matrix
+        # Multi-platform and Java version testing matrix per SYS-PLT-001 and SYS-PLT-002
         os: [ubuntu-latest]
         # Future: expand to [ubuntu-latest, windows-latest, macos-latest]
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Setup Maven
@@ -146,10 +157,10 @@ jobs:
             -nsu
 
       - name: Upload build artifacts
-        if: success() && matrix.os == 'ubuntu-latest'
+        if: success() && matrix.os == 'ubuntu-latest' && matrix.java-version == '17'
         uses: actions/upload-artifact@v4
         with:
-          name: alliance-distribution
+          name: alliance-distribution-java-${{ matrix.java-version }}
           path: distribution/alliance/target/*.zip
           retention-days: 14
 
@@ -157,7 +168,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-full-${{ matrix.os }}
+          name: test-results-full-${{ matrix.os }}-java-${{ matrix.java-version }}
           path: |
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
@@ -167,12 +178,13 @@ jobs:
         if: success() && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: jacoco-reports
+          name: jacoco-reports-java-${{ matrix.java-version }}
           path: |
             **/target/site/jacoco/**
           retention-days: 14
 
   # Deploy artifacts (mirrors Jenkins deploy stage)
+  # Note: Deploy only with Java 17 (recommended LTS version)
   deploy:
     name: Deploy Artifacts
     runs-on: ubuntu-latest
@@ -186,7 +198,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 (recommended version for deployment)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'

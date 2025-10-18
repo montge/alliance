@@ -18,8 +18,13 @@ env:
 jobs:
   # Generate coverage reports
   coverage-report:
-    name: Generate Coverage Report
+    name: Generate Coverage Report (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Test coverage on all supported Java versions per SYS-PLT-002
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
@@ -27,11 +32,11 @@ jobs:
         with:
           fetch-depth: 0  # Needed for coverage trend analysis
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Setup Maven
@@ -58,7 +63,7 @@ jobs:
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:
-          name: jacoco-coverage-reports
+          name: jacoco-coverage-reports-java-${{ matrix.java-version }}
           path: |
             **/target/site/jacoco/
             distribution/alliance/target/site/jacoco-aggregate/
@@ -217,13 +222,13 @@ jobs:
       - name: Upload module coverage summary
         uses: actions/upload-artifact@v4
         with:
-          name: module-coverage-summary
+          name: module-coverage-summary-java-${{ matrix.java-version }}
           path: module-coverage.md
           retention-days: 30
 
-      # Comment on PR with coverage information
+      # Comment on PR with coverage information (only for Java 17 to avoid duplicate comments)
       - name: Comment PR with coverage
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.java-version == '17'
         uses: actions/github-script@v7
         with:
           script: |
@@ -249,18 +254,23 @@ jobs:
 
   # Integration test coverage (separate job)
   integration-coverage:
-    name: Integration Test Coverage
+    name: Integration Test Coverage (Java ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Test integration test coverage on all supported Java versions per SYS-PLT-002
+        java-version: ['11', '17', '21']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ matrix.java-version }}
           cache: 'maven'
 
       - name: Run integration tests with coverage
@@ -273,6 +283,6 @@ jobs:
       - name: Upload integration test coverage
         uses: actions/upload-artifact@v4
         with:
-          name: integration-test-coverage
+          name: integration-test-coverage-java-${{ matrix.java-version }}
           path: distribution/test/itests/**/target/site/jacoco/
           retention-days: 30
