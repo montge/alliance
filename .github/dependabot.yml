@@ -1,12 +1,54 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
+# Dependabot configuration for Alliance
+# Automatically creates PRs for dependency updates and security patches
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # Maven dependencies - primary package manager for Java code
+  - package-ecosystem: "maven"
+    directory: "/"
     schedule:
       interval: "weekly"
-      
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Group related dependencies to reduce PR noise
+    groups:
+      test-dependencies:
+        patterns:
+          - "junit*"
+          - "mockito*"
+          - "hamcrest*"
+          - "spock*"
+          - "groovy*"
+      build-dependencies:
+        patterns:
+          - "maven-*"
+          - "jacoco*"
+          - "checkstyle*"
+      security-dependencies:
+        patterns:
+          - "owasp*"
+          - "commons-*"
+          - "jackson-*"
+
+  # GitHub Actions - keep CI/CD workflows up to date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci-cd"
+    commit-message:
+      prefix: "ci"
+

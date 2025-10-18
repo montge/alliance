@@ -1,0 +1,278 @@
+name: Test Coverage Analysis
+
+on:
+  push:
+    branches:
+      - master
+      - '*.x'
+  pull_request:
+    branches:
+      - master
+      - '*.x'
+  workflow_dispatch:
+
+env:
+  MAVEN_OPTS: '-Xmx8G -Xms1G -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom'
+  MAVEN_CLI_OPTS: '--batch-mode --errors --fail-at-end --show-version'
+
+jobs:
+  # Generate coverage reports
+  coverage-report:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for coverage trend analysis
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: '3.9.5'
+
+      - name: Run tests with coverage
+        run: |
+          mvn $MAVEN_CLI_OPTS clean test \
+            -P !itests \
+            jacoco:report
+
+      - name: Install required tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libxml2-utils bc
+
+      - name: Generate aggregate coverage report
+        run: |
+          # JaCoCo aggregate may not be configured, skip if it fails
+          mvn $MAVEN_CLI_OPTS jacoco:report-aggregate -pl distribution/alliance || echo "⚠️  Aggregate report not available, using individual module reports"
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-reports
+          path: |
+            **/target/site/jacoco/
+            distribution/alliance/target/site/jacoco-aggregate/
+          retention-days: 30
+
+      # Generate coverage summary
+      - name: Extract coverage metrics
+        id: coverage
+        run: |
+          # Try to find aggregate coverage report, fall back to any available report
+          COVERAGE_FILE="distribution/alliance/target/site/jacoco-aggregate/jacoco.xml"
+
+          if [ ! -f "$COVERAGE_FILE" ]; then
+            # Try root jacoco report
+            COVERAGE_FILE="target/site/jacoco/jacoco.xml"
+          fi
+
+          if [ ! -f "$COVERAGE_FILE" ]; then
+            # Find any jacoco report
+            COVERAGE_FILE=$(find . -path "*/target/site/jacoco/jacoco.xml" -type f | head -1)
+          fi
+
+          if [ -f "$COVERAGE_FILE" ] && [ -n "$COVERAGE_FILE" ]; then
+            echo "Using coverage file: $COVERAGE_FILE"
+            # Extract instruction coverage
+            INSTRUCTION_MISSED=$(xmllint --xpath 'string(//counter[@type="INSTRUCTION"]/@missed)' $COVERAGE_FILE)
+            INSTRUCTION_COVERED=$(xmllint --xpath 'string(//counter[@type="INSTRUCTION"]/@covered)' $COVERAGE_FILE)
+            INSTRUCTION_TOTAL=$((INSTRUCTION_MISSED + INSTRUCTION_COVERED))
+            INSTRUCTION_PERCENT=$(echo "scale=2; ($INSTRUCTION_COVERED * 100) / $INSTRUCTION_TOTAL" | bc)
+
+            # Extract branch coverage
+            BRANCH_MISSED=$(xmllint --xpath 'string(//counter[@type="BRANCH"]/@missed)' $COVERAGE_FILE)
+            BRANCH_COVERED=$(xmllint --xpath 'string(//counter[@type="BRANCH"]/@covered)' $COVERAGE_FILE)
+            BRANCH_TOTAL=$((BRANCH_MISSED + BRANCH_COVERED))
+            BRANCH_PERCENT=$(echo "scale=2; ($BRANCH_COVERED * 100) / $BRANCH_TOTAL" | bc)
+
+            # Extract complexity coverage
+            COMPLEXITY_MISSED=$(xmllint --xpath 'string(//counter[@type="COMPLEXITY"]/@missed)' $COVERAGE_FILE)
+            COMPLEXITY_COVERED=$(xmllint --xpath 'string(//counter[@type="COMPLEXITY"]/@covered)' $COVERAGE_FILE)
+            COMPLEXITY_TOTAL=$((COMPLEXITY_MISSED + COMPLEXITY_COVERED))
+            COMPLEXITY_PERCENT=$(echo "scale=2; ($COMPLEXITY_COVERED * 100) / $COMPLEXITY_TOTAL" | bc)
+
+            echo "instruction_coverage=$INSTRUCTION_PERCENT" >> $GITHUB_OUTPUT
+            echo "branch_coverage=$BRANCH_PERCENT" >> $GITHUB_OUTPUT
+            echo "complexity_coverage=$COMPLEXITY_PERCENT" >> $GITHUB_OUTPUT
+
+            echo "📊 Coverage Summary:"
+            echo "  Instruction: $INSTRUCTION_PERCENT%"
+            echo "  Branch: $BRANCH_PERCENT%"
+            echo "  Complexity: $COMPLEXITY_PERCENT%"
+          else
+            echo "⚠️  Coverage report not found"
+            echo "instruction_coverage=0" >> $GITHUB_OUTPUT
+            echo "branch_coverage=0" >> $GITHUB_OUTPUT
+            echo "complexity_coverage=0" >> $GITHUB_OUTPUT
+          fi
+
+      # Check coverage thresholds
+      - name: Check coverage thresholds
+        run: |
+          INSTRUCTION_COVERAGE="${{ steps.coverage.outputs.instruction_coverage }}"
+          BRANCH_COVERAGE="${{ steps.coverage.outputs.branch_coverage }}"
+          COMPLEXITY_COVERAGE="${{ steps.coverage.outputs.complexity_coverage }}"
+
+          # Current baseline: 75%
+          # Target: 80% overall
+          MIN_COVERAGE=75.0
+          TARGET_COVERAGE=80.0
+
+          echo "Current Coverage vs Target:"
+          echo "  Instruction: $INSTRUCTION_COVERAGE% (Target: $TARGET_COVERAGE%)"
+          echo "  Branch: $BRANCH_COVERAGE% (Target: $TARGET_COVERAGE%)"
+          echo "  Complexity: $COMPLEXITY_COVERAGE% (Target: $TARGET_COVERAGE%)"
+
+          # Fail if coverage drops below baseline
+          if (( $(echo "$INSTRUCTION_COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+            echo "❌ Instruction coverage dropped below baseline ($MIN_COVERAGE%)"
+            exit 1
+          fi
+
+          if (( $(echo "$BRANCH_COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+            echo "❌ Branch coverage dropped below baseline ($MIN_COVERAGE%)"
+            exit 1
+          fi
+
+          if (( $(echo "$COMPLEXITY_COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+            echo "❌ Complexity coverage dropped below baseline ($MIN_COVERAGE%)"
+            exit 1
+          fi
+
+          # Warn if not at target yet
+          if (( $(echo "$INSTRUCTION_COVERAGE < $TARGET_COVERAGE" | bc -l) )); then
+            echo "⚠️  Instruction coverage below target ($TARGET_COVERAGE%)"
+          fi
+
+          echo "✅ Coverage meets baseline requirements"
+
+      # Generate per-module coverage report
+      - name: Generate module coverage summary
+        run: |
+          echo "# Per-Module Coverage Analysis" > module-coverage.md
+          echo "" >> module-coverage.md
+          echo "| Module | Instruction | Branch | Complexity | Status |" >> module-coverage.md
+          echo "|--------|-------------|--------|------------|--------|" >> module-coverage.md
+
+          # Find all module coverage reports
+          find . -path "*/target/site/jacoco/jacoco.xml" | while read report; do
+            MODULE=$(dirname $(dirname $(dirname $report)))
+            MODULE_NAME=$(basename $MODULE)
+
+            INST=$(xmllint --xpath 'string(//counter[@type="INSTRUCTION"]/@covered)' $report 2>/dev/null || echo "0")
+            INST_TOTAL=$(xmllint --xpath 'string(//counter[@type="INSTRUCTION"]/@missed)' $report 2>/dev/null || echo "0")
+            INST_TOTAL=$((INST + INST_TOTAL))
+            if [ $INST_TOTAL -gt 0 ]; then
+              INST_PCT=$(echo "scale=1; ($INST * 100) / $INST_TOTAL" | bc)
+            else
+              INST_PCT="N/A"
+            fi
+
+            BRANCH=$(xmllint --xpath 'string(//counter[@type="BRANCH"]/@covered)' $report 2>/dev/null || echo "0")
+            BRANCH_TOTAL=$(xmllint --xpath 'string(//counter[@type="BRANCH"]/@missed)' $report 2>/dev/null || echo "0")
+            BRANCH_TOTAL=$((BRANCH + BRANCH_TOTAL))
+            if [ $BRANCH_TOTAL -gt 0 ]; then
+              BRANCH_PCT=$(echo "scale=1; ($BRANCH * 100) / $BRANCH_TOTAL" | bc)
+            else
+              BRANCH_PCT="N/A"
+            fi
+
+            COMP=$(xmllint --xpath 'string(//counter[@type="COMPLEXITY"]/@covered)' $report 2>/dev/null || echo "0")
+            COMP_TOTAL=$(xmllint --xpath 'string(//counter[@type="COMPLEXITY"]/@missed)' $report 2>/dev/null || echo "0")
+            COMP_TOTAL=$((COMP + COMP_TOTAL))
+            if [ $COMP_TOTAL -gt 0 ]; then
+              COMP_PCT=$(echo "scale=1; ($COMP * 100) / $COMP_TOTAL" | bc)
+            else
+              COMP_PCT="N/A"
+            fi
+
+            # Determine status based on target (90-95%)
+            if [ "$INST_PCT" != "N/A" ]; then
+              if (( $(echo "$INST_PCT >= 90" | bc -l) )); then
+                STATUS="✅ Target Met"
+              elif (( $(echo "$INST_PCT >= 75" | bc -l) )); then
+                STATUS="⚠️ Needs Improvement"
+              else
+                STATUS="❌ Below Baseline"
+              fi
+            else
+              STATUS="N/A"
+            fi
+
+            echo "| $MODULE_NAME | $INST_PCT% | $BRANCH_PCT% | $COMP_PCT% | $STATUS |" >> module-coverage.md
+          done
+
+          cat module-coverage.md
+
+      - name: Upload module coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-coverage-summary
+          path: module-coverage.md
+          retention-days: 30
+
+      # Comment on PR with coverage information
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const moduleCoverage = fs.readFileSync('module-coverage.md', 'utf8');
+
+            const comment = `## 📊 Test Coverage Report\n\n` +
+              `### Overall Coverage\n` +
+              `- **Instruction Coverage**: ${{ steps.coverage.outputs.instruction_coverage }}%\n` +
+              `- **Branch Coverage**: ${{ steps.coverage.outputs.branch_coverage }}%\n` +
+              `- **Complexity Coverage**: ${{ steps.coverage.outputs.complexity_coverage }}%\n\n` +
+              `**Baseline**: 75% | **Target**: 80% overall, 90-95% per module\n\n` +
+              `### Module Coverage\n\n` +
+              moduleCoverage + `\n\n` +
+              `📈 For detailed coverage reports, check the workflow artifacts.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+
+  # Integration test coverage (separate job)
+  integration-coverage:
+    name: Integration Test Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Run integration tests with coverage
+        run: |
+          mvn $MAVEN_CLI_OPTS clean install \
+            -pl distribution/test/itests \
+            -amd \
+            jacoco:report
+
+      - name: Upload integration test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-coverage
+          path: distribution/test/itests/**/target/site/jacoco/
+          retention-days: 30
