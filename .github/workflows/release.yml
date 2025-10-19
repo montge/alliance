@@ -126,12 +126,13 @@ jobs:
             exit 1
           fi
 
-          # Build with timestamp
+          # Build with timestamp (skip Docker to avoid disk space issues on GitHub Actions)
           BUILD_TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
           mvn clean install \
             -DskipTests=true \
             -DskipStatic=true \
-            -Drevision=${BUILD_TIMESTAMP}
+            -Drevision=${BUILD_TIMESTAMP} \
+            -pl !distribution/docker
 
       - name: Create Nightly Release
         if: inputs.release_type == 'nightly'
