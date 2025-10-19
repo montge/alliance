@@ -1,0 +1,212 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - versioned
+          - nightly
+        default: 'nightly'
+      version:
+        description: 'Release version (for versioned releases only, e.g., 1.18.0)'
+        required: false
+        type: string
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for release plugin
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      # ============================================================
+      # Versioned Release
+      # ============================================================
+      - name: Maven Release (Versioned)
+        if: inputs.release_type == 'versioned'
+        run: |
+          # Validate version format
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format X.Y.Z (e.g., 1.18.0)"
+            exit 1
+          fi
+
+          # Prepare release (updates POMs, creates tag)
+          mvn --batch-mode release:prepare \
+            -DreleaseVersion=${{ inputs.version }} \
+            -Dtag=alliance-${{ inputs.version }} \
+            -DpushChanges=false \
+            -DskipTests=true \
+            -DskipStatic=true
+
+          # Build release artifacts
+          git checkout alliance-${{ inputs.version }}
+          mvn clean install -Prelease -DskipTests=true -DskipStatic=true
+
+          # Return to master for next steps
+          git checkout master
+
+      - name: Create GitHub Release (Versioned)
+        if: inputs.release_type == 'versioned'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: alliance-${{ inputs.version }}
+          name: Alliance ${{ inputs.version }}
+          body: |
+            ## Alliance ${{ inputs.version }}
+
+            ### Highlights
+            - Phase 2: 98.1% test coverage achieved
+            - Phase 3: Security vulnerability framework established
+            - 372 CVEs documented and prioritized
+            - Comprehensive DO-278 compliant test infrastructure
+
+            ### Distribution
+            Download the distribution ZIP below and extract it. Run Alliance with:
+            ```bash
+            # Linux/Mac
+            ./alliance-${{ inputs.version }}/bin/alliance
+
+            # Windows
+            alliance-${{ inputs.version }}\bin\alliance.bat
+            ```
+
+            ### Requirements
+            - Java 11 or later (Java 17 recommended)
+            - 4GB+ RAM recommended
+
+            ### Documentation
+            - [Installation Guide](https://github.com/${{ github.repository }}/blob/master/README.md)
+            - [DO-278 Compliance](https://github.com/${{ github.repository }}/blob/master/CLAUDE.md)
+            - [Security Framework](https://github.com/${{ github.repository }}/blob/master/docs/security/README.md)
+          files: |
+            distribution/alliance/target/alliance-${{ inputs.version }}.zip
+          draft: false
+          prerelease: false
+
+      - name: Push Release Tags and Commits (Versioned)
+        if: inputs.release_type == 'versioned'
+        run: |
+          git push origin master
+          git push origin alliance-${{ inputs.version }}
+
+      # ============================================================
+      # Nightly Build
+      # ============================================================
+      - name: Build Nightly Snapshot
+        if: inputs.release_type == 'nightly'
+        run: |
+          # Get current version from pom.xml
+          CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+
+          # Ensure it's a SNAPSHOT version
+          if [[ ! "$CURRENT_VERSION" =~ -SNAPSHOT$ ]]; then
+            echo "Error: Nightly builds require SNAPSHOT version"
+            exit 1
+          fi
+
+          # Build with timestamp
+          BUILD_TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          mvn clean install \
+            -DskipTests=true \
+            -DskipStatic=true \
+            -Drevision=${BUILD_TIMESTAMP}
+
+      - name: Create Nightly Release
+        if: inputs.release_type == 'nightly'
+        run: |
+          CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          BUILD_TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          NIGHTLY_TAG="nightly-${BUILD_TIMESTAMP}"
+
+          # Create and push nightly tag
+          git tag -a ${NIGHTLY_TAG} -m "Nightly build ${BUILD_TIMESTAMP}"
+          git push origin ${NIGHTLY_TAG}
+
+          # Create GitHub release
+          gh release create ${NIGHTLY_TAG} \
+            --title "Alliance Nightly Build (${BUILD_TIMESTAMP})" \
+            --notes "Automated nightly build from master branch.
+
+          **Build Information:**
+          - Version: ${CURRENT_VERSION}
+          - Timestamp: ${BUILD_TIMESTAMP}
+          - Commit: ${{ github.sha }}
+
+          **⚠️ Warning:** Nightly builds are for testing and development only. Use versioned releases for production.
+
+          **Installation:**
+          Extract the ZIP and run Alliance:
+          \`\`\`bash
+          # Linux/Mac
+          ./alliance-*/bin/alliance
+
+          # Windows
+          alliance-*\\bin\\alliance.bat
+          \`\`\`" \
+            --prerelease \
+            distribution/alliance/target/alliance-${CURRENT_VERSION}.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================================
+      # Cleanup Old Nightly Releases
+      # ============================================================
+      - name: Cleanup Old Nightly Releases
+        if: inputs.release_type == 'nightly'
+        run: |
+          # Keep only the last 7 nightly builds
+          gh release list --limit 100 | grep "nightly-" | tail -n +8 | while read -r line; do
+            TAG=$(echo "$line" | awk '{print $3}')
+            echo "Deleting old nightly release: $TAG"
+            gh release delete "$TAG" --yes --cleanup-tag || true
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Optional: Automated nightly schedule
+  scheduled-nightly:
+    name: Scheduled Nightly Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Trigger Nightly Build
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'release.yml',
+              ref: 'master',
+              inputs: {
+                release_type: 'nightly'
+              }
+            });
+
+# Optional: Uncomment to enable automatic nightly builds at 2 AM UTC
+# on:
+#   schedule:
+#     - cron: '0 2 * * *'  # 2 AM UTC daily
