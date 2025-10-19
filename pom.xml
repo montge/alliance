@@ -146,6 +146,7 @@
         <camel.version>3.22.4</camel.version>
         <cxf.version>3.6.8</cxf.version>
         <netty.version>4.1.119.Final</netty.version>
+        <logback.version>1.2.13</logback.version>
         <commons-collections4.version>4.1</commons-collections4.version>
         <commons-configuration.version>1.10</commons-configuration.version>
         <commons-exec.version>1.3</commons-exec.version>
@@ -235,6 +236,17 @@
                 <version>${netty.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Logback version override to fix CVE-2023-6378 (DoS vulnerability) -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
