@@ -85,7 +85,7 @@
         <google-http-client.version>1.22.0</google-http-client.version>
         <html5shiv.version>3.7.2</html5shiv.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <httpcore.version>4.4.15</httpcore.version>
+        <httpcore.version>4.4.16</httpcore.version>
         <icanhandlebarz.version>0.1</icanhandlebarz.version>
         <iframe-resizer.version>2.6.2</iframe-resizer.version>
         <jquery.version>1.11.0</jquery.version>
