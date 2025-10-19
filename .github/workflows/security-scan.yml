@@ -27,8 +27,8 @@ jobs:
 
     strategy:
       matrix:
-        # Test security on all supported Java versions per SYS-PLT-002
-        java-version: ['11', '17', '21']
+        # Test security on all supported Java versions per SYS-PLT-002 (Java 11 removed - project requires Java 17+)
+        java-version: ['17', '21']
 
     steps:
       - name: Checkout repository

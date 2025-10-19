@@ -28,8 +28,8 @@ jobs:
 
     strategy:
       matrix:
-        # Test on Java LTS versions per SYS-PLT-002
-        java-version: ['11', '17', '21']
+        # Test on Java LTS versions per SYS-PLT-002 (Java 11 removed - project requires Java 17+)
+        java-version: ['17', '21']
 
     steps:
       - name: Checkout repository
@@ -64,8 +64,8 @@ jobs:
 
     strategy:
       matrix:
-        # Test on Java LTS versions per SYS-PLT-002
-        java-version: ['11', '17', '21']
+        # Test on Java LTS versions per SYS-PLT-002 (Java 11 removed - project requires Java 17+)
+        java-version: ['17', '21']
 
     steps:
       - name: Checkout repository
@@ -126,7 +126,8 @@ jobs:
         # Multi-platform and Java version testing matrix per SYS-PLT-001 and SYS-PLT-002
         os: [ubuntu-latest]
         # Future: expand to [ubuntu-latest, windows-latest, macos-latest]
-        java-version: ['11', '17', '21']
+        # Java 11 removed - project requires Java 17+ (target release 17)
+        java-version: ['17', '21']
 
     steps:
       - name: Checkout repository
