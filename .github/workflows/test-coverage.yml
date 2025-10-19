@@ -229,7 +229,7 @@ jobs:
       # Comment on PR with coverage information (only for Java 17 to avoid duplicate comments)
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request' && matrix.java-version == '17'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
