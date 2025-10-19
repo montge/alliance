@@ -1,0 +1,22 @@
+# Valid JOINT Banner Markings
+# Format: <banner_string>|<description>
+
+# Joint with Two Countries
+//JOINT SECRET CAN USA|Joint SECRET between Canada and USA
+//JOINT SECRET DEU USA|Joint SECRET between Germany and USA
+//JOINT SECRET GBR USA|Joint SECRET between UK and USA
+//JOINT SECRET CAN NATO|Joint SECRET between Canada and NATO
+
+# Joint with Three Countries
+//JOINT TOP SECRET CAN DEU USA|Joint TOP SECRET among Canada, Germany, and USA
+//JOINT SECRET CAN GBR USA|Joint SECRET among Canada, UK, and USA
+//JOINT SECRET DEU GBR NATO|Joint SECRET among Germany, UK, and NATO
+
+# Joint with Four or More Countries
+//JOINT TOP SECRET AUS CAN GBR USA|Joint TOP SECRET among four countries
+//JOINT SECRET CAN DEU FRA GBR USA|Joint SECRET among five countries
+
+# Joint with Additional Controls
+//JOINT SECRET CAN USA//TK//NOFORN|Joint SECRET with SCI
+//JOINT SECRET CAN DEU USA NATO//TK//RELIDO|Joint SECRET with SCI and RELIDO
+//JOINT TOP SECRET CAN USA//SAR-BP|Joint TOP SECRET with SAP
