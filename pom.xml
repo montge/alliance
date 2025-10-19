@@ -107,7 +107,7 @@
         <gem-maven-plugin.version>1.0.5</gem-maven-plugin.version>
 
         <!--Test properties-->
-        <awaitility.version>3.1.6</awaitility.version>
+        <awaitility.version>4.3.0</awaitility.version>
         <byte-buddy.version>1.14.19</byte-buddy.version>
         <groovy.version>4.0.23</groovy.version>
         <hamcrest-all.servicemix.version>1.3_1</hamcrest-all.servicemix.version>
