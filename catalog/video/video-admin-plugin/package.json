@@ -43,5 +43,12 @@
   "files": [
     "src/main/webapp"
   ],
-  "context-path": "/sourcesToQuery"
+  "context-path": "/sourcesToQuery",
+  "resolutions": {
+    "shell-quote": "^1.8.0",
+    "form-data": "^4.0.0",
+    "pbkdf2": "^3.1.5",
+    "path-to-regexp": "^0.1.12",
+    "cross-spawn": "^7.0.6"
+  }
 }
