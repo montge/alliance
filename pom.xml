@@ -615,6 +615,11 @@
                         </suppressionFiles>
                         <!-- This prevents a build failure on jdk tools jar -->
                         <skipSystemScope>true</skipSystemScope>
+                        <!-- Generate HTML and JSON reports for Phase 2 vulnerability analysis -->
+                        <formats>
+                            <format>HTML</format>
+                            <format>JSON</format>
+                        </formats>
                     </configuration>
                 </plugin>
             </plugins>

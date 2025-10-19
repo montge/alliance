@@ -1,0 +1,19 @@
+# Valid FGI (Foreign Government Information) Banner Markings
+# Format: <banner_string>|<description>
+
+# NATO Markings
+//NATO SECRET//ATOMAL|NATO SECRET with ATOMAL
+//NATO SECRET//BOHEMIA|NATO SECRET with BOHEMIA
+//COSMIC TOP SECRET//ATOMAL|COSMIC TOP SECRET with ATOMAL
+//COSMIC TOP SECRET//BOHEMIA|COSMIC TOP SECRET with BOHEMIA
+
+# Country-Specific FGI Markings
+//CAN RESTRICTED|Canadian RESTRICTED
+//DEU RESTRICTED|German RESTRICTED
+//DEU SECRET|German SECRET
+//GBR SECRET|British SECRET
+//FRA CONFIDENTIAL|French CONFIDENTIAL
+//AUS TOP SECRET|Australian TOP SECRET
+
+# FGI with Additional Controls (where applicable)
+//NATO SECRET//ATOMAL//NOFORN|NATO SECRET ATOMAL with NOFORN (may be invalid based on para 4.b.3)

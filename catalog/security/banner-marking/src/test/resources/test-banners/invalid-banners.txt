@@ -1,0 +1,77 @@
+# Invalid Banner Markings for Negative Testing
+# Format: <banner_string>|<expected_paragraph_reference>|<description>
+
+# Invalid FGI Markings
+//DEU TOP SECRET//BOHEMIA|4.b.2.c.|FGI marking with incorrect control for authority
+//COSMIC TOP SECRET//BALK//NOFORN|4.b.3.|COSMIC with NOFORN not allowed
+//NATO SECRET//ATOMAL//NOFORN|4.b.3.|NATO with NOFORN not allowed
+//COSMIC SECRET|4.b.2.a.|COSMIC requires control marking
+//NATO TOP SECRET|4.b.2.a.|NATO requires control marking
+//NATO SECRET//BALK|4.b.2.c.|NATO with wrong control marking
+//NATO SECRET//BOHEMIA//NOFORN|4.b.2.c.,4.b.3.|NATO with wrong control and NOFORN
+
+# Invalid Joint Markings
+//JOINT RESTRICTED CAN USA|5.d.|JOINT cannot be RESTRICTED
+//JOINT SECRET USA|5.b.|JOINT requires at least two countries
+//JOINT SECRET CAN|5.b.|JOINT requires at least two countries
+
+# Invalid SCI Controls
+TOP SECRET//HCS-X ABC DEF|6.f.|HCS requires NOFORN or approved dissem control
+SECRET//KLONDIKE//ORCON|6.f.|KLONDIKE with incompatible dissem control
+SECRET//MADE-UP-SCI|6.c.|Custom SCI requires dissem control
+
+# Invalid SAP Controls
+TOP SECRET//SPECIAL ACCESS REQUIRED-BUTTERED POPCORN/AA/BB/CC/DD|7.e.|SAP with more than 3 programs
+TOP SECRET//SAR-BUTTERED POPCORN/AA/BB/CC/DD|7.e.|SAP with more than 3 programs (abbreviation)
+SECRET//WAIVED|7.f.|WAIVED without SAP
+
+# Invalid AEA Markings
+RESTRICTED//RD|8.a.4.|RD requires CONFIDENTIAL or higher
+RESTRICTED//RESTRICTED DATA|8.a.4.|RD requires CONFIDENTIAL or higher
+RESTRICTED//FORMERLY RESTRICTED DATA|8.b.2.|FRD requires CONFIDENTIAL or higher
+UNCLASSIFIED//FRD|8.b.2.|FRD requires CONFIDENTIAL or higher
+SECRET//FRD-N|8.c.3.|FRD cannot have CNWDI
+TOP SECRET//FORMERLY RESTRICTED DATA-N|8.c.3.|FRD cannot have CNWDI
+CONFIDENTIAL//FRD-SIGMA 1 112 240|8.d.3.|FRD SIGMA must be 1-99
+SECRET//FRD-SIGMA 100|8.d.3.|FRD SIGMA over 99 is invalid
+
+# Invalid FGI Country Codes
+//DEU SECRET//FGI CAN|9.a.|FGI document cannot have FGI marking
+CONFIDENTIAL//FGI CAN USA|-|USA not allowed in FGI list (implied)
+RESTRICTED//FGI CAN|9.b.|FGI not allowed with RESTRICTED
+RESTRICTED//FGI CAN USA|9.b.,-|FGI not allowed with RESTRICTED and USA not allowed
+SECRET//FGI NZL CAN|9.d.|FGI country codes must be alphabetical
+
+# Invalid Dissemination Controls
+RESTRICTED//ORCON|10.d.3.|ORCON not allowed with RESTRICTED
+CONFIDENTIAL//IMCON|1.b.,1.c.|IMCON requires SECRET or TOP SECRET
+SECRET//IMCON/FISA|1.c.|IMCON cannot combine with FISA
+RESTRICTED//NOFORN|2.c.|NOFORN not allowed with RESTRICTED
+CONFIDENTIAL//NOFORN/RELIDO|2.d.|NOFORN conflicts with RELIDO
+RESTRICTED//PROPIN|3.b.|PROPIN not allowed with RESTRICTED
+RESTRICTED//RELIDO|4.c.|RELIDO not allowed with RESTRICTED
+
+# Invalid REL TO and DISPLAY ONLY
+RESTRICTED//REL TO CAN|10.e.3.|REL TO not allowed with RESTRICTED
+CONFIDENTIAL//REL TO USA|10.e.5.|REL TO cannot be USA only
+SECRET//NOFORN/REL TO CAN|2.d.,10.e.7.|NOFORN conflicts with REL TO
+SECRET//REL TO CAN, USA, GBR|10.e.4.|REL TO countries must be alphabetical
+RESTRICTED//DISPLAY ONLY AFG|10.g.3.|DISPLAY ONLY not allowed with RESTRICTED
+SECRET//NOFORN/DISPLAY ONLY AFG|10.g.4.|NOFORN conflicts with DISPLAY ONLY
+SECRET//RELIDO/DISPLAY ONLY AFG|10.g.4.|RELIDO conflicts with DISPLAY ONLY
+SECRET//DISPLAY ONLY NZL, AFG|10.g.5.|DISPLAY ONLY countries must be alphabetical
+
+# Invalid Other Dissemination Controls
+SECRET//EXDIS/NODIS|1.d.|EXDIS and NODIS are mutually exclusive
+SECRET//REL TO CAN//EXDIS|1.c.|EXDIS conflicts with REL TO
+SECRET//REL TO CAN//NODIS|2.d.|NODIS conflicts with REL TO
+
+# Edge Cases and Malformed Markings
+|empty|Empty banner string
+   |whitespace|Whitespace only
+INVALID CLASSIFICATION|invalid|Invalid classification level
+SECRET//|incomplete|Incomplete dissemination controls
+//SECRET|malformed|FGI marker without authority
+SECRET NOFORN|missing_separator|Missing // separator
+TOP SECRET//NOFORN ORCON|missing_separator|Missing / between controls
+SECRET/TK//NOFORN|single_slash|Single slash instead of double
