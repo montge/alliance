@@ -95,7 +95,7 @@
         <node.version>v10.16.1</node.version>
         <require-css.version>0.1.10</require-css.version>
         <requirejs-plugins.version>1.0.2</requirejs-plugins.version>
-        <underscore.version>1.8.3</underscore.version>
+        <underscore.version>1.10.2</underscore.version>
         <webjars.handlebars.version>1.2.1</webjars.handlebars.version>
 
         <!--Maven properties-->
