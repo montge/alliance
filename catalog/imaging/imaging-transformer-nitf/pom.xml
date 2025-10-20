@@ -91,7 +91,7 @@
         <dependency>
             <groupId>javax.measure</groupId>
             <artifactId>unit-api</artifactId>
-            <version>1.0</version>
+            <version>2.2</version>
         </dependency>
         <dependency>
             <groupId>org.codice.alliance.catalog.core</groupId>
