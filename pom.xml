@@ -114,7 +114,7 @@
         <hamcrest-all.version>1.3</hamcrest-all.version>
         <junit.version>4.13.2</junit.version>
         <mockito.version>4.11.0</mockito.version>
-        <objenesis.version>3.3</objenesis.version>
+        <objenesis.version>3.4</objenesis.version>
         <pax.exam.version>4.14.0</pax.exam.version>
         <pax.tinybundles.version>4.0.1</pax.tinybundles.version>
         <pax.url.version>2.6.17</pax.url.version>
