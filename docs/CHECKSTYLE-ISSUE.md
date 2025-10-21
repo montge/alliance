@@ -119,11 +119,27 @@ While this issue is being fixed, Dependabot PRs will be merged using `-DskipStat
 
 ## Status
 
-- [ ] Documented issue (this file)
-- [ ] Merged PRs with `-DskipStatic=true` workaround
-- [ ] Fixed Checkstyle configuration
+- [x] Documented issue (this file)
+- [x] Merged PRs with `-DskipStatic=true` workaround (ALL 14 PRs RESOLVED!)
+- [x] Attempted Option 1: Upgraded plugin to 3.3.1 (DID NOT FIX - issue in DDF rules)
+- [ ] Fixed Checkstyle configuration (requires Option 3 or DDF coordination)
 - [ ] Verified all modules pass Checkstyle
 - [ ] Re-enabled Checkstyle in CI/CD
+
+## Update (2025-10-20)
+
+**Attempted Fix:** Upgraded maven-checkstyle-plugin from 3.1.1 → 3.3.1 (Option 1)
+
+**Result:** ❌ ERROR PERSISTS
+
+The error is NOT a plugin compatibility issue. The problem is in the DDF Checkstyle rules (`ddf.support:support-checkstyle:2.3.17`) themselves. The `IllegalType` module in those rules references a 'format' property that doesn't exist in Checkstyle.
+
+**Root Cause:** DDF's custom Checkstyle configuration contains invalid module properties.
+
+**Next Steps:**
+1. ✅ Continue using `-DskipStatic=true` workaround (safe, doesn't affect code quality)
+2. Option 3: Create local Checkstyle configuration (overrides DDF rules)
+3. Option: Contact DDF team about support-checkstyle:2.3.17 bug
 
 ---
 
