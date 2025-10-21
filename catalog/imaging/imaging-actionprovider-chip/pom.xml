@@ -85,7 +85,7 @@
         <dependency>
             <groupId>org.webjars.bower</groupId>
             <artifactId>components-bootstrap</artifactId>
-            <version>3.1.1</version>
+            <version>3.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.webjars.bower</groupId>
