@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OWASP Dependency-Check Suppression Configuration for Alliance Project
+
+  Purpose: Suppress verified false positive CVE reports that incorrectly attribute
+           vulnerabilities to dependencies where the actual vulnerability exists in
+           a different library or has already been patched.
+
+  Maintenance: Review suppressions quarterly and remove when:
+    1. The underlying scanner bug is fixed
+    2. The dependency is upgraded/removed
+    3. New information indicates the suppression is invalid
+
+  DO-278 Compliance: All suppressions require documented justification with
+                      external references proving false positive status.
+
+  Last Updated: 2025-10-20
+  Alliance Version: 1.17.5-SNAPSHOT
+  OWASP Dependency-Check Version: 12.1.0
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+  <!--
+    ========================================================================
+    SECTION 1: Alliance Artifacts (Original Suppression)
+    ========================================================================
+
+    Suppress all CVEs reported against Alliance's own artifacts as these
+    are false positives (scanner incorrectly identifying vulnerabilities
+    in Alliance code itself rather than its dependencies).
+  -->
+  <suppress>
+    <notes><![CDATA[
+    Ignore all vulnerabilities reported against Alliance artifacts. These are false positives.
+    Alliance artifacts are not vulnerable - the scanner is incorrectly identifying CVEs
+    in Alliance's own code rather than in its dependencies.
+
+    Note: CVEs with a score of exactly 10.0 will need to be suppressed separately.
+    ]]></notes>
+    <gav regex="true">org.codice.alliance.*:.*</gav>
+    <cvssBelow>10</cvssBelow>
+  </suppress>
+
+  <!--
+    ========================================================================
+    SECTION 2: mxparser False Positives (XStream CVEs)
+    ========================================================================
+
+    CRITICAL FINDING: OWASP Dependency-Check has a known bug that incorrectly
+    attributes XStream CVEs to the mxparser library.
+
+    Background:
+    - mxparser is a lightweight XML parser (fork of xpp3_min 1.1.7)
+    - XStream is a separate library for XML serialization/deserialization
+    - XStream uses mxparser as its parser (transitive dependency)
+    - CVEs belong to XStream's deserialization logic, NOT mxparser's parser
+    - Alliance uses XStream 1.4.21 which has ALL these CVEs patched
+
+    Evidence:
+    - GitHub Issue: https://github.com/dependency-check/DependencyCheck/issues/7688
+      "False Positive CVE-2021-21345 On io.github.x-stream:mxparser library"
+    - XStream Release Notes: https://x-stream.github.io/changes.html
+    - Alliance XStream Version Verification: docs/security/phase3a/XSTREAM-UPGRADE-REPORT.md
+
+    Total False Positives: 40+ CVEs (all CRITICAL/HIGH severity)
+    Actual Status: Alliance uses XStream 1.4.21 - ALL CVEs PATCHED
+    -->
+
+  <!-- CVE-2021-21345 - XStream RCE (CVSS 9.9) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVE-2021-21345 incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: CRITICAL (CVSS 9.9)
+    - Actual Affected Library: XStream < 1.4.16
+    - Vulnerability: Remote Code Execution via type manipulation
+    - Fixed In: XStream 1.4.16 (March 2021)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21 (November 2024) via DDF dependency
+    - Location: pom.xml line 182 - <xstream.version>1.4.21</xstream.version>
+    - Status: PATCHED (5 years of security fixes beyond 1.4.16)
+
+    Why mxparser is NOT Vulnerable:
+    - mxparser is only a parser, not a deserializer
+    - The vulnerability is in XStream's Constructor class (deserialization)
+    - mxparser 1.2.2 is a stable, secure parser with no known RCE vulnerabilities
+
+    References:
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    - XStream CVE: https://x-stream.github.io/CVE-2021-21345.html
+    - Alliance Analysis: docs/security/phase3a/XSTREAM-UPGRADE-REPORT.md
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2021-21345</cve>
+  </suppress>
+
+  <!-- CVE-2013-7285 - XStream RCE (CVSS 9.8) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVE-2013-7285 incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: CRITICAL (CVSS 9.8)
+    - Actual Affected Library: XStream <= 1.4.6, 1.4.10 (pre-security framework)
+    - Vulnerability: Remote Code Execution via unmarshalling
+    - Fixed In: XStream 1.4.11 (April 2017) with security framework
+
+    Alliance Status:
+    - Uses: XStream 1.4.21 (7+ years of security improvements)
+    - Status: PATCHED (includes security framework + whitelist mode since 1.4.18)
+
+    References:
+    - XStream CVE: http://x-stream.github.io/CVE-2013-7285.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2013-7285</cve>
+  </suppress>
+
+  <!-- CVE-2021-21344, CVE-2021-21346, CVE-2021-21347 - XStream RCE (CVSS 9.8) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVEs (2021-21344/46/47) incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: CRITICAL (CVSS 9.8)
+    - Actual Affected Library: XStream < 1.4.16
+    - Vulnerability: Remote Code Execution via type manipulation
+    - Fixed In: XStream 1.4.16 (March 2021)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21 (includes fixes for all three CVEs)
+    - Status: PATCHED
+
+    References:
+    - XStream Security: https://x-stream.github.io/security.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2021-21344</cve>
+    <cve>CVE-2021-21346</cve>
+    <cve>CVE-2021-21347</cve>
+  </suppress>
+
+  <!-- CVE-2021-21350 - XStream RCE (CVSS 9.8) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVE-2021-21350 incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: CRITICAL (CVSS 9.8)
+    - Actual Affected Library: XStream < 1.4.16
+    - Vulnerability: Remote Code Execution via input stream manipulation
+    - Fixed In: XStream 1.4.16 (March 2021)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21
+    - Status: PATCHED
+
+    References:
+    - XStream CVE: https://x-stream.github.io/CVE-2021-21350.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2021-21350</cve>
+  </suppress>
+
+  <!-- CVE-2021-21342, CVE-2021-21351 - XStream RCE (CVSS 9.1) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVEs (2021-21342/51) incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: CRITICAL (CVSS 9.1)
+    - Actual Affected Library: XStream < 1.4.16
+    - CVE-2021-21342: Type information recreation vulnerability
+    - CVE-2021-21351: Remote host code execution
+    - Fixed In: XStream 1.4.16 (March 2021)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21
+    - Status: PATCHED
+
+    References:
+    - XStream Security: https://x-stream.github.io/security.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2021-21342</cve>
+    <cve>CVE-2021-21351</cve>
+  </suppress>
+
+  <!-- CVE-2021-21349 - XStream SSRF (CVSS 8.6) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVE-2021-21349 incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: HIGH (CVSS 8.6)
+    - Actual Affected Library: XStream < 1.4.16
+    - Vulnerability: Server-Side Request Forgery (SSRF)
+    - Fixed In: XStream 1.4.16 (March 2021)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21
+    - Status: PATCHED
+
+    References:
+    - XStream CVE: https://x-stream.github.io/CVE-2021-21349.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2021-21349</cve>
+  </suppress>
+
+  <!-- CVE-2020-26217 - XStream RCE (CVSS 8.8) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVE-2020-26217 incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: HIGH (CVSS 8.8)
+    - Actual Affected Library: XStream < 1.4.14
+    - Vulnerability: Remote Code Execution (blocklist bypass)
+    - Fixed In: XStream 1.4.14 (October 2020)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21 (7 minor versions beyond fix)
+    - Status: PATCHED
+
+    Note: This vulnerability only affected users relying on blocklists.
+    XStream 1.4.18+ uses whitelist mode by default (much more secure).
+
+    References:
+    - XStream Advisory: https://x-stream.github.io/CVE-2020-26217.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2020-26217</cve>
+  </suppress>
+
+  <!-- CVE-2021-29505 - XStream RCE (CVSS 8.8) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVE-2021-29505 incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: HIGH (CVSS 8.8)
+    - Actual Affected Library: XStream < 1.4.17
+    - Vulnerability: Remote Code Execution via JNDI
+    - Fixed In: XStream 1.4.17 (May 2021)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21 (4 minor versions beyond fix)
+    - Status: PATCHED (JNDI classes blacklisted in 1.4.17)
+
+    References:
+    - XStream CVE: https://x-stream.github.io/CVE-2021-29505.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    - Alliance Analysis: docs/security/phase3a/XSTREAM-UPGRADE-REPORT.md
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2021-29505</cve>
+  </suppress>
+
+  <!-- CVE-2021-39139 - XStream RCE (CVSS 8.8) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: XStream CVE-2021-39139 incorrectly attributed to mxparser.
+
+    CVE Details:
+    - Severity: HIGH (CVSS 8.8)
+    - Actual Affected Library: XStream < 1.4.18
+    - Vulnerability: Remote Code Execution via Xalan transformer
+    - Fixed In: XStream 1.4.18 (August 2021)
+
+    Alliance Status:
+    - Uses: XStream 1.4.21 (3 minor versions beyond fix)
+    - Status: PATCHED (includes whitelist mode introduced in 1.4.18)
+
+    Significance: XStream 1.4.18 was a MAJOR security update that switched
+    from blacklist to whitelist mode by default. Alliance's 1.4.21 version
+    includes this fundamental security improvement.
+
+    References:
+    - XStream CVE: https://x-stream.github.io/CVE-2021-39139.html
+    - XStream 1.4.18 Changes: https://x-stream.github.io/changes.html#1.4.18
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <cve>CVE-2021-39139</cve>
+  </suppress>
+
+  <!-- Additional XStream CVEs (catch-all for remaining false positives) -->
+  <suppress>
+    <notes><![CDATA[
+    FALSE POSITIVE: Additional XStream CVEs incorrectly attributed to mxparser.
+
+    This suppression catches remaining XStream CVEs that may be reported against
+    mxparser, including but not limited to:
+    - CVE-2021-39140 through CVE-2021-39154 (16 CVEs from XStream 1.4.18 release)
+    - CVE-2022-40151, CVE-2022-40152, CVE-2022-40153, CVE-2022-40154, CVE-2022-40155, CVE-2022-40156
+    - CVE-2021-43859
+    - CVE-2024-47072
+
+    All of these CVEs:
+    1. Belong to XStream, not mxparser
+    2. Are fixed in XStream 1.4.21 (Alliance's current version)
+    3. Are incorrectly attributed by OWASP Dependency-Check scanner
+
+    Rationale: Rather than list all 40+ individual CVEs, this catch-all suppression
+    handles any XStream-related CVE reported against mxparser. Alliance uses
+    XStream 1.4.21 which includes ALL security patches through November 2024.
+
+    Verification: If new CVEs are reported, verify:
+    1. CVE actually affects XStream (check NVD/XStream security page)
+    2. Alliance's XStream version (1.4.21) includes the fix
+    3. CVE is incorrectly attributed to mxparser
+
+    References:
+    - XStream Security Page: https://x-stream.github.io/security.html
+    - XStream Change Log: https://x-stream.github.io/changes.html
+    - Scanner Bug: https://github.com/dependency-check/DependencyCheck/issues/7688
+    - Alliance XStream Version: pom.xml line 182
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.github\.x\-stream/mxparser@.*$</packageUrl>
+    <vulnerabilityName regex="true">.*XStream.*</vulnerabilityName>
+  </suppress>
+
+  <!--
+    ========================================================================
+    SECTION 3: Placeholder for Future False Positives
+    ========================================================================
+
+    As new false positives are identified during security remediation phases,
+    add them below with proper documentation following the same format:
+
+    1. Detailed notes explaining why it's a false positive
+    2. Evidence/references (GitHub issues, CVE databases, vendor advisories)
+    3. Alliance's actual status (version in use, whether patched)
+    4. Risk assessment if applicable
+
+    DO-278 Requirement: Every suppression must be justified and documented.
+  -->
+
+</suppressions>

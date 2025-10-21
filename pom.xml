@@ -642,6 +642,7 @@
                         <suppressionFiles>
                             <suppressionFile>https://raw.githubusercontent.com/codice/ddf/master/dependency-check-maven-config.xml</suppressionFile>
                             <suppressionFile>dependency-check-maven-config.xml</suppressionFile>
+                            <suppressionFile>owasp-suppressions.xml</suppressionFile>
                         </suppressionFiles>
                         <!-- This prevents a build failure on jdk tools jar -->
                         <skipSystemScope>true</skipSystemScope>
