@@ -104,7 +104,7 @@
 
         <!--Maven plugin properties-->
         <asciidoctor.maven.plugin.version>2.2.1</asciidoctor.maven.plugin.version>
-        <gem-maven-plugin.version>1.0.5</gem-maven-plugin.version>
+        <gem-maven-plugin.version>2.0.1</gem-maven-plugin.version>
 
         <!--Test properties-->
         <awaitility.version>4.3.0</awaitility.version>
