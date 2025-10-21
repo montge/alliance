@@ -69,7 +69,7 @@ jobs:
 
       - name: Create GitHub Release (Versioned)
         if: inputs.release_type == 'versioned'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: alliance-${{ inputs.version }}
           name: Alliance ${{ inputs.version }}
