@@ -120,7 +120,7 @@
         <pax.tinybundles.version>4.0.1</pax.tinybundles.version>
         <pax.url.version>2.6.17</pax.url.version>
         <powermock.version>2.0.9</powermock.version>
-        <restassured.version>5.5.0</restassured.version>
+        <restassured.version>5.5.6</restassured.version>
         <spock.version>2.3-groovy-4.0</spock.version>
         <xmlunit.version>1.4</xmlunit.version>
         <yarn.version>v1.17.3</yarn.version>
