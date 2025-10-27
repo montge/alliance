@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload OWASP report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: owasp-dependency-check-report-java-${{ matrix.java-version }}
           path: target/dependency-check-report.html
@@ -206,7 +206,7 @@ jobs:
 
       - name: Upload license report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: license-compliance-report-java-${{ matrix.java-version }}
           path: target/checkstyle-result.xml

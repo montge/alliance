@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results-incremental-java-${{ matrix.java-version }}
           path: |
@@ -159,7 +159,7 @@ jobs:
 
       - name: Upload build artifacts
         if: success() && matrix.os == 'ubuntu-latest' && matrix.java-version == '17'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: alliance-distribution-java-${{ matrix.java-version }}
           path: distribution/alliance/target/*.zip
@@ -167,7 +167,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results-full-${{ matrix.os }}-java-${{ matrix.java-version }}
           path: |
@@ -177,7 +177,7 @@ jobs:
 
       - name: Upload JaCoCo coverage reports
         if: success() && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jacoco-reports-java-${{ matrix.java-version }}
           path: |

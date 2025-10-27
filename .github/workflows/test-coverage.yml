@@ -61,7 +61,7 @@ jobs:
           mvn $MAVEN_CLI_OPTS jacoco:report-aggregate -pl distribution/alliance || echo "⚠️  Aggregate report not available, using individual module reports"
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jacoco-coverage-reports-java-${{ matrix.java-version }}
           path: |
@@ -220,7 +220,7 @@ jobs:
           cat module-coverage.md
 
       - name: Upload module coverage summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: module-coverage-summary-java-${{ matrix.java-version }}
           path: module-coverage.md
@@ -281,7 +281,7 @@ jobs:
             jacoco:report
 
       - name: Upload integration test coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: integration-test-coverage-java-${{ matrix.java-version }}
           path: distribution/test/itests/**/target/site/jacoco/
