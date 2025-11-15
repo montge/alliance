@@ -35,6 +35,23 @@ abstract class AbstractMetadataPacket {
 
   private static final int BASE_PES_PACKET_HEADER_LENGTH = 9;
 
+  /**
+   * Maximum allowed PES payload length (32 MB).
+   *
+   * <p>This limit prevents integer overflow attacks (CUSTOM-KLV-002, Issue #52) in PES packet
+   * processing. Legitimate STANAG 4609 PES packets should not exceed this size.
+   *
+   * @see <a href="https://github.com/montge/alliance/issues/52">Issue #52</a>
+   */
+  private static final int MAX_PES_PAYLOAD_LENGTH = 32 * 1024 * 1024; // 32 MB
+
+  /**
+   * Maximum allowed additional header bytes (255 is spec maximum, but we're conservative).
+   *
+   * <p>Prevents integer overflow in headerLength calculation.
+   */
+  private static final int MAX_ADDITIONAL_HEADER_BYTES = 255;
+
   private final byte[] pesPacketBytes;
 
   private final PESPacket pesHeader;
@@ -86,12 +103,81 @@ abstract class AbstractMetadataPacket {
       return null;
     }
 
+    // Read additional header bytes from PES header
     int additionalHeaderBytes = Byte.toUnsignedInt(pesPacketBytes[PES_HEADER_LENGTH_INDEX]);
 
+    // SECURITY FIX (CUSTOM-KLV-002, Issue #52): Validate additionalHeaderBytes
+    // This value comes from untrusted PES packet and could be malicious
+    if (additionalHeaderBytes > MAX_ADDITIONAL_HEADER_BYTES) {
+      LOGGER.warn(
+          "Rejecting PES packet with excessive additional header bytes: {} (max: {})",
+          additionalHeaderBytes,
+          MAX_ADDITIONAL_HEADER_BYTES);
+      return null;
+    }
+
+    // SECURITY FIX: Validate pesHeader.length before arithmetic
+    if (pesHeader.length < 3 + additionalHeaderBytes) {
+      LOGGER.warn(
+          "Rejecting PES packet: header length ({}) too small for additional header bytes ({})",
+          pesHeader.length,
+          additionalHeaderBytes);
+      return null;
+    }
+
     int payloadLength = pesHeader.length - 3 - additionalHeaderBytes;
+
+    // SECURITY FIX: Validate payload length is reasonable
+    if (payloadLength > MAX_PES_PAYLOAD_LENGTH) {
+      LOGGER.warn(
+          "Rejecting PES packet with excessive payload length: {} bytes (max: {})",
+          payloadLength,
+          MAX_PES_PAYLOAD_LENGTH);
+      return null;
+    }
+
+    // Negative payload length indicates malformed packet
+    if (payloadLength < 0) {
+      LOGGER.warn("Rejecting PES packet with negative payload length: {}", payloadLength);
+      return null;
+    }
+
+    // SECURITY FIX: Safe integer arithmetic for headerLength
+    // Check overflow before addition
+    if (additionalHeaderBytes > Integer.MAX_VALUE - BASE_PES_PACKET_HEADER_LENGTH) {
+      LOGGER.warn("Rejecting PES packet: headerLength calculation would overflow");
+      return null;
+    }
+
     int headerLength = BASE_PES_PACKET_HEADER_LENGTH + additionalHeaderBytes;
 
+    // SECURITY FIX: Validate headerLength doesn't exceed buffer
+    if (headerLength > pesPacketBytes.length) {
+      LOGGER.warn(
+          "Rejecting PES packet: headerLength ({}) exceeds buffer size ({})",
+          headerLength,
+          pesPacketBytes.length);
+      return null;
+    }
+
+    // SECURITY FIX: Safe integer arithmetic for payloadEnd
+    // Check overflow before addition
+    if (payloadLength > Integer.MAX_VALUE - headerLength) {
+      LOGGER.warn("Rejecting PES packet: payloadEnd calculation would overflow");
+      return null;
+    }
+
     final int payloadEnd = Math.min(pesPacketBytes.length, headerLength + payloadLength);
+
+    // SECURITY FIX: Validate slice bounds (defense in depth)
+    if (headerLength < 0 || payloadEnd < 0 || payloadEnd < headerLength) {
+      LOGGER.warn(
+          "Rejecting PES packet: invalid slice bounds (headerLength={}, payloadEnd={})",
+          headerLength,
+          payloadEnd);
+      return null;
+    }
+
     return Arrays.copyOfRange(pesPacketBytes, headerLength, payloadEnd);
   }
 
