@@ -29,3 +29,11 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
+
+# Virtual environment
+venv/
+.venv/
+
+# AI-generated content and local planning documents
+# Pattern from rechtevan/JaxMARL - keeps AI slop out of git
+.local/
