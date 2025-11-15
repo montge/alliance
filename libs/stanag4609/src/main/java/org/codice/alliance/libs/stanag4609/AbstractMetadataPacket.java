@@ -192,6 +192,11 @@ abstract class AbstractMetadataPacket {
         LOGGER.trace("KLV bytes: {}", DatatypeConverter.printHexBinary(klvBytes));
       }
 
+      // SECURITY FIX (CUSTOM-KLV-001, Issue #51): Validate KLV before decoding
+      // This prevents integer overflow attacks via malicious BER length fields
+      // Defense-in-depth: validate before passing to DDF decoder
+      KlvSecurityValidator.validateKlvBytes(klvBytes);
+
       final KlvContext decodedKLV = decoder.decode(klvBytes);
 
       if (validateChecksum(decodedKLV, klvBytes)) {

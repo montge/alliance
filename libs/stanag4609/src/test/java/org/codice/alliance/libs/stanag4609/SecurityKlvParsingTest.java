@@ -70,12 +70,12 @@ public class SecurityKlvParsingTest {
    * corruption.
    *
    * <p><b>Expected (after fix):</b> Should throw KlvDecodingException for oversized lengths
-   * <b>Actual (before fix):</b> May crash or exhibit undefined behavior
+   *
+   * <p><b>STATUS:</b> ✅ FIX IMPLEMENTED - Test should now PASS
    *
    * @throws Exception if test setup fails
    */
   @Test(expected = KlvDecodingException.class)
-  @Ignore("VULNERABILITY EXISTS - Remove @Ignore after implementing fix for issue #51")
   public void testCUSTOM_KLV_001_IntegerOverflowInBERLength() throws Exception {
     LOGGER.warn(
         "SECURITY TEST: CUSTOM-KLV-001 - Testing integer overflow in BER length field (Issue #51)");
