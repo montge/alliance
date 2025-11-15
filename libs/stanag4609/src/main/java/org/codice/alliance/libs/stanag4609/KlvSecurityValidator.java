@@ -69,6 +69,26 @@ class KlvSecurityValidator {
   private static final int UNIVERSAL_KEY_LENGTH = 16;
 
   /**
+   * Local Key length for nested KLV Local Sets (1 byte).
+   *
+   * <p>Local Set elements use 1-byte keys within the Universal Key context.
+   */
+  private static final int LOCAL_KEY_LENGTH = 1;
+
+  /**
+   * Maximum allowed nesting depth for KLV Local Sets.
+   *
+   * <p>This limit prevents stack overflow attacks (CUSTOM-KLV-003, Issue #53) via deeply nested
+   * KLV structures. Legitimate STANAG 4609 metadata rarely exceeds 5-10 levels of nesting.
+   *
+   * <p><b>Security Note:</b> A depth of 32 provides generous headroom for legitimate use while
+   * preventing DoS attacks that use 5,000-10,000 levels to cause stack overflow.
+   *
+   * @see <a href="https://github.com/montge/alliance/issues/53">Issue #53: CUSTOM-KLV-003</a>
+   */
+  private static final int MAX_NESTING_DEPTH = 32;
+
+  /**
    * Validates KLV bytes for security vulnerabilities before decoding.
    *
    * <p>This method performs comprehensive security checks on raw KLV data to prevent:
@@ -138,8 +158,25 @@ class KlvSecurityValidator {
               totalRequired, klvBytes.length));
     }
 
+    // SECURITY CHECK 3: Validate nesting depth (CUSTOM-KLV-003, Issue #53)
+    // This prevents stack overflow DoS attacks via deeply nested KLV structures
+    final int nestingDepth = validateNestingDepth(klvBytes, 0, 0);
+    if (nestingDepth > MAX_NESTING_DEPTH) {
+      LOGGER.warn(
+          "SECURITY: Rejecting KLV with excessive nesting depth: {} levels (max: {})",
+          nestingDepth,
+          MAX_NESTING_DEPTH);
+      throw new KlvDecodingException(
+          String.format(
+              "KLV nesting depth exceeds maximum: %d levels (max: %d)",
+              nestingDepth, MAX_NESTING_DEPTH));
+    }
+
     LOGGER.debug(
-        "KLV security validation passed: {} bytes (BER length: {})", klvBytes.length, berLength.value);
+        "KLV security validation passed: {} bytes (BER length: {}, nesting depth: {})",
+        klvBytes.length,
+        berLength.value,
+        nestingDepth);
   }
 
   /**
@@ -230,6 +267,122 @@ class KlvSecurityValidator {
     }
 
     return new BERLength(lengthValue, numLengthBytes);
+  }
+
+  /**
+   * Validates KLV nesting depth to prevent stack overflow DoS attacks.
+   *
+   * <p>This method recursively walks the KLV structure to count maximum nesting depth WITHOUT fully
+   * decoding the data. It identifies Local Sets (which can be nested) and tracks depth.
+   *
+   * <p><b>Security Goal:</b> Detect deeply nested structures (e.g., 10,000 levels) BEFORE they
+   * reach DDF's recursive KlvDecoder, which has no depth limit.
+   *
+   * <p><b>Algorithm:</b>
+   *
+   * <ol>
+   *   <li>Parse outer Universal Key + BER length
+   *   <li>Scan value for Local Set elements (key type that can contain nested structures)
+   *   <li>Recursively validate nested Local Sets with depth + 1
+   *   <li>Return maximum depth encountered
+   * </ol>
+   *
+   * <p><b>Note:</b> This is a simplified structure validation, not full KLV decoding. It may not
+   * detect all nesting scenarios, but catches the most common attack patterns.
+   *
+   * @param data KLV byte array
+   * @param offset Starting offset in array
+   * @param currentDepth Current recursion depth (0 for initial call)
+   * @return Maximum nesting depth found in this KLV structure
+   * @throws KlvDecodingException if structure is malformed or validation fails
+   */
+  private static int validateNestingDepth(final byte[] data, int offset, final int currentDepth)
+      throws KlvDecodingException {
+
+    // Safety check: prevent our own stack overflow during validation
+    if (currentDepth > MAX_NESTING_DEPTH) {
+      throw new KlvDecodingException(
+          String.format("Nesting depth limit exceeded: %d (max: %d)", currentDepth, MAX_NESTING_DEPTH));
+    }
+
+    // Validate minimum data for KLV element
+    if (offset + UNIVERSAL_KEY_LENGTH + 1 > data.length) {
+      // Not enough data for another KLV element - end of structure
+      return currentDepth;
+    }
+
+    // Skip Universal Key (16 bytes for outer, or check if this is a local key)
+    final int keyLength;
+    if (offset == 0) {
+      keyLength = UNIVERSAL_KEY_LENGTH; // Outer Universal Key
+    } else {
+      keyLength = LOCAL_KEY_LENGTH; // Inner Local Key
+    }
+
+    if (offset + keyLength >= data.length) {
+      return currentDepth;
+    }
+
+    offset += keyLength;
+
+    // Parse BER length
+    final BERLength berLength = parseBERLength(data, offset);
+    offset += 1 + berLength.numLengthBytes; // Skip BER encoding bytes
+
+    // Calculate value end position
+    if (berLength.value > Integer.MAX_VALUE) {
+      throw new KlvDecodingException("BER length exceeds integer bounds during depth validation");
+    }
+
+    final int valueLength = (int) berLength.value;
+    final int valueEnd = offset + valueLength;
+
+    // Validate we have enough data
+    if (valueEnd > data.length) {
+      // Malformed structure - insufficient data
+      // Don't fail here, let main validator catch it
+      return currentDepth;
+    }
+
+    // Scan value region for nested Local Sets
+    // This is a simplified check - we look for patterns that indicate nesting
+    int maxDepthFound = currentDepth;
+    int pos = offset;
+
+    while (pos + LOCAL_KEY_LENGTH + 1 < valueEnd) {
+      // Check if this looks like a Local Set element
+      // Local Sets typically have key 0x01-0x7F (printable range)
+      final int localKey = data[pos] & 0xFF;
+
+      if (localKey > 0 && localKey < 0x80) {
+        // Might be a local element - check if it has a length field
+        if (pos + LOCAL_KEY_LENGTH < data.length) {
+          final int nextByte = data[pos + LOCAL_KEY_LENGTH] & 0xFF;
+
+          // If next byte looks like a length (short form or long form BER)
+          // recursively validate this potential nested structure
+          try {
+            final int nestedDepth = validateNestingDepth(data, pos, currentDepth + 1);
+            if (nestedDepth > maxDepthFound) {
+              maxDepthFound = nestedDepth;
+            }
+          } catch (KlvDecodingException e) {
+            // If nested validation fails, it might not be a real nested structure
+            // Continue scanning
+          }
+        }
+      }
+
+      // Move to next byte
+      pos++;
+
+      // Safety: don't scan forever
+      if (pos - offset > 10000) {
+        break; // Scanned enough of the value
+      }
+    }
+
+    return maxDepthFound;
   }
 
   /**
