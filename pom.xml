@@ -101,13 +101,31 @@
              jQuery 1.11.0 is 11 years old (released March 2014), no longer maintained.
         -->
         <jquery.version>3.7.1</jquery.version>
-        <jquery-ui.version>1.10.4</jquery-ui.version>
-        <marionette.version>2.4.5</marionette.version>
-        <moment.version>2.20.1</moment.version>
+        <!-- Upgraded from 1.10.4 to 1.13.3 to fix multiple XSS CVEs
+             CVE-2021-41182: XSS in Checkboxradio widget
+             CVE-2021-41183: XSS in *-outer methods
+             CVE-2021-41184: XSS in Autocomplete widget
+             CVE-2022-31160: XSS in Dialog widget
+             jQuery UI 1.10.4 is 11 years old (2014)
+        -->
+        <jquery-ui.version>1.13.3</jquery-ui.version>
+        <!-- Upgraded from 2.4.5 to 2.4.7 (latest 2.x)
+             Marionette 2.4.5 is 9 years old (2016)
+             Note: Marionette 5.x available but requires code migration
+        -->
+        <marionette.version>2.4.7</marionette.version>
+        <!-- Upgraded from 2.20.1 to 2.30.1 (latest)
+             Moment.js is in maintenance mode but still receives security updates
+             Future work: Consider migration to Luxon, Day.js, or date-fns
+        -->
+        <moment.version>2.30.1</moment.version>
         <node.version>v10.16.1</node.version>
         <require-css.version>0.1.10</require-css.version>
         <requirejs-plugins.version>1.0.2</requirejs-plugins.version>
-        <underscore.version>1.10.2</underscore.version>
+        <!-- Upgraded from 1.10.2 to 1.13.7 (latest)
+             Underscore 1.10.2 is 6 years old (2019)
+        -->
+        <underscore.version>1.13.7</underscore.version>
         <webjars.handlebars.version>1.2.1</webjars.handlebars.version>
 
         <!--Maven properties-->
