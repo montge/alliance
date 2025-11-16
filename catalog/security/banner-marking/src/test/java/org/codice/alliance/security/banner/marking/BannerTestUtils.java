@@ -43,15 +43,85 @@ public class BannerTestUtils {
   // US Banner Marking Factory Methods
   // ==========================================================================
 
-  // TODO: createUsTopSecretBanner() - Create "TOP SECRET" BannerMarkings
-  // TODO: createUsSecretBanner() - Create "SECRET" BannerMarkings
-  // TODO: createUsConfidentialBanner() - Create "CONFIDENTIAL" BannerMarkings
-  // TODO: createUsRestrictedBanner() - Create "RESTRICTED" BannerMarkings (if used in tests)
-  // TODO: createUsUnclassifiedBanner() - Create "UNCLASSIFIED" BannerMarkings
+  /**
+   * Create a TOP SECRET banner marking.
+   *
+   * @return BannerMarkings for "TOP SECRET"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsTopSecretBanner() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("TOP SECRET");
+  }
 
-  // TODO: createUsSecretNoforn() - Create "SECRET//NOFORN" BannerMarkings
-  // TODO: createUsTopSecretOrcon() - Create "TOP SECRET//ORCON" BannerMarkings
-  // TODO: createUsUnclassifiedFouo() - Create "UNCLASSIFIED//FOUO" BannerMarkings
+  /**
+   * Create a SECRET banner marking.
+   *
+   * @return BannerMarkings for "SECRET"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsSecretBanner() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("SECRET");
+  }
+
+  /**
+   * Create a CONFIDENTIAL banner marking.
+   *
+   * @return BannerMarkings for "CONFIDENTIAL"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsConfidentialBanner() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("CONFIDENTIAL");
+  }
+
+  /**
+   * Create a RESTRICTED banner marking.
+   *
+   * @return BannerMarkings for "RESTRICTED"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsRestrictedBanner() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("RESTRICTED");
+  }
+
+  /**
+   * Create an UNCLASSIFIED banner marking.
+   *
+   * @return BannerMarkings for "UNCLASSIFIED"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsUnclassifiedBanner() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("UNCLASSIFIED");
+  }
+
+  /**
+   * Create a SECRET//NOFORN banner marking.
+   *
+   * @return BannerMarkings for "SECRET//NOFORN"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsSecretNoforn() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("SECRET//NOFORN");
+  }
+
+  /**
+   * Create a TOP SECRET//ORCON banner marking.
+   *
+   * @return BannerMarkings for "TOP SECRET//ORCON"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsTopSecretOrcon() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("TOP SECRET//ORCON");
+  }
+
+  /**
+   * Create an UNCLASSIFIED//FOUO banner marking.
+   *
+   * @return BannerMarkings for "UNCLASSIFIED//FOUO"
+   * @throws MarkingsValidationException if parsing fails
+   */
+  public static BannerMarkings createUsUnclassifiedFouo() throws MarkingsValidationException {
+    return BannerMarkings.parseMarkings("UNCLASSIFIED//FOUO");
+  }
 
   // ==========================================================================
   // FGI Banner Marking Factory Methods
@@ -92,23 +162,130 @@ public class BannerTestUtils {
   // SAP Control Factory Methods
   // ==========================================================================
 
-  // TODO: createSapControl(String programName) - Create SAP control with single program
-  // TODO: createSapControlMultiplePrograms(String... programNames) - Create SAP with multiple
-  // programs
-  // TODO: createSapControlMultipleProgramsIndicator() - Create SAR-MULTIPLE PROGRAMS SapControl
-  // TODO: createHvsacoControl() - Create HVSACO SapControl
+  /**
+   * Create a SAP control with a single program.
+   *
+   * @param programName the SAP program name (e.g., "BP")
+   * @return SapControl for the specified program
+   */
+  public static SapControl createSapControl(String programName) {
+    return new SapControl(programName);
+  }
+
+  /**
+   * Create a SAP control with multiple programs.
+   *
+   * @param programNames the SAP program names (e.g., "BP", "GB", "TC")
+   * @return SapControl for multiple programs
+   */
+  public static SapControl createSapControlMultiplePrograms(String... programNames) {
+    return new SapControl(String.join("/", programNames));
+  }
+
+  /**
+   * Create a SAR-MULTIPLE PROGRAMS SapControl.
+   *
+   * @return SapControl for multiple programs indicator
+   */
+  public static SapControl createSapControlMultipleProgramsIndicator() {
+    return new SapControl("MULTIPLE PROGRAMS");
+  }
+
+  /**
+   * Create an HVSACO SapControl.
+   *
+   * @return SapControl for HVSACO
+   */
+  public static SapControl createHvsacoControl() {
+    return new SapControl();
+  }
 
   // ==========================================================================
   // AEA Marking Factory Methods
   // ==========================================================================
 
-  // TODO: createRdMarking() - Create basic RD AeaMarking
-  // TODO: createRdCnwdiMarking() - Create RD-N AeaMarking
-  // TODO: createRdSigmaMarking(int... sigmas) - Create RD-SIGMA AeaMarking
-  // TODO: createFrdMarking() - Create FRD AeaMarking
-  // TODO: createFrdSigmaMarking(int... sigmas) - Create FRD-SIGMA AeaMarking
-  // TODO: createDodUcniMarking() - Create DOD_UCNI AeaMarking
-  // TODO: createDoeUcniMarking() - Create DOE_UCNI AeaMarking
+  /**
+   * Create a basic RD (Restricted Data) AeaMarking.
+   *
+   * @return AeaMarking for RD
+   */
+  public static AeaMarking createRdMarking() {
+    return new AeaMarking("RD");
+  }
+
+  /**
+   * Create an RD-N (RD with CNWDI) AeaMarking.
+   *
+   * @return AeaMarking for RD-N
+   */
+  public static AeaMarking createRdCnwdiMarking() {
+    return new AeaMarking("RD-N");
+  }
+
+  /**
+   * Create an RD-SIGMA AeaMarking with specified sigma values.
+   *
+   * @param sigmas the sigma values (1-99)
+   * @return AeaMarking for RD-SIGMA
+   */
+  public static AeaMarking createRdSigmaMarking(int... sigmas) {
+    StringBuilder sb = new StringBuilder("RD-SIGMA");
+    for (int i = 0; i < sigmas.length; i++) {
+      if (i == 0) {
+        sb.append(" ");
+      } else {
+        sb.append(" ");
+      }
+      sb.append(sigmas[i]);
+    }
+    return new AeaMarking(sb.toString());
+  }
+
+  /**
+   * Create a basic FRD (Formerly Restricted Data) AeaMarking.
+   *
+   * @return AeaMarking for FRD
+   */
+  public static AeaMarking createFrdMarking() {
+    return new AeaMarking("FRD");
+  }
+
+  /**
+   * Create an FRD-SIGMA AeaMarking with specified sigma values.
+   *
+   * @param sigmas the sigma values (1-99)
+   * @return AeaMarking for FRD-SIGMA
+   */
+  public static AeaMarking createFrdSigmaMarking(int... sigmas) {
+    StringBuilder sb = new StringBuilder("FRD-SIGMA");
+    for (int i = 0; i < sigmas.length; i++) {
+      if (i == 0) {
+        sb.append(" ");
+      } else {
+        sb.append(" ");
+      }
+      sb.append(sigmas[i]);
+    }
+    return new AeaMarking(sb.toString());
+  }
+
+  /**
+   * Create a DOD UCNI AeaMarking.
+   *
+   * @return AeaMarking for DOD_UCNI
+   */
+  public static AeaMarking createDodUcniMarking() {
+    return new AeaMarking("DOD UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION");
+  }
+
+  /**
+   * Create a DOE UCNI AeaMarking.
+   *
+   * @return AeaMarking for DOE_UCNI
+   */
+  public static AeaMarking createDoeUcniMarking() {
+    return new AeaMarking("DOE UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION");
+  }
 
   // ==========================================================================
   // Complex Banner Marking Factory Methods
@@ -132,16 +309,86 @@ public class BannerTestUtils {
   // Test Data Lists
   // ==========================================================================
 
-  // TODO: getAllValidUsClassifications() - Return list of all valid US classification strings
-  // TODO: getAllValidFgiMarkings() - Return list of all valid FGI marking strings
-  // TODO: getAllValidJointMarkings() - Return list of all valid JOINT marking strings
-  // TODO: getAllValidSciControls() - Return list of all valid SCI control strings
-  // TODO: getAllValidSapControls() - Return list of all valid SAP control strings
-  // TODO: getAllValidAeaMarkings() - Return list of all valid AEA marking strings
-  // TODO: getAllValidDissemControls() - Return list of all valid dissem control strings
+  /**
+   * Get all valid US classification marking strings.
+   *
+   * @return list of valid US classification strings
+   */
+  public static java.util.List<String> getAllValidUsClassifications() {
+    return java.util.Arrays.asList(
+        "TOP SECRET",
+        "SECRET",
+        "CONFIDENTIAL",
+        "RESTRICTED",
+        "UNCLASSIFIED");
+  }
 
-  // TODO: getAllInvalidMarkings() - Return list of invalid markings for negative testing
-  // TODO: getValidationErrorScenarios() - Return map of invalid markings to expected paragraph refs
+  /**
+   * Get all valid SAP control marking strings.
+   *
+   * @return list of valid SAP control strings
+   */
+  public static java.util.List<String> getAllValidSapControls() {
+    return java.util.Arrays.asList(
+        "TOP SECRET//SAR-BP",
+        "SECRET//SAR-BP/GB",
+        "TOP SECRET//SAR-BP/GB/TC",
+        "SECRET//SAR-MULTIPLE PROGRAMS",
+        "SECRET//HVSACO",
+        "TOP SECRET//SAR-BP//WAIVED");
+  }
+
+  /**
+   * Get all valid AEA marking strings.
+   *
+   * @return list of valid AEA marking strings
+   */
+  public static java.util.List<String> getAllValidAeaMarkings() {
+    return java.util.Arrays.asList(
+        "TOP SECRET//RESTRICTED DATA",
+        "SECRET//RD",
+        "CONFIDENTIAL//RD",
+        "SECRET//RD-N",
+        "TOP SECRET//RD-SIGMA 1 12 40",
+        "SECRET//FORMERLY RESTRICTED DATA",
+        "CONFIDENTIAL//FRD",
+        "CONFIDENTIAL//FRD-SIGMA 14",
+        "UNCLASSIFIED//DOD UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION",
+        "UNCLASSIFIED//DOE UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION");
+  }
+
+  /**
+   * Get all valid dissemination control marking strings.
+   *
+   * @return list of valid dissem control strings
+   */
+  public static java.util.List<String> getAllValidDissemControls() {
+    return java.util.Arrays.asList(
+        "SECRET//NOFORN",
+        "TOP SECRET//ORCON",
+        "UNCLASSIFIED//FOUO",
+        "SECRET//PROPIN",
+        "CONFIDENTIAL//RELIDO",
+        "SECRET//IMCON/NOFORN");
+  }
+
+  /**
+   * Get invalid banner markings for negative testing.
+   *
+   * @return list of invalid marking strings
+   */
+  public static java.util.List<String> getAllInvalidMarkings() {
+    return java.util.Arrays.asList(
+        "RESTRICTED//RD", // RD requires CONFIDENTIAL+
+        "RESTRICTED//FRD", // FRD requires CONFIDENTIAL+
+        "SECRET//FRD-N", // FRD cannot have CNWDI
+        "SECRET//RD-SIGMA 150", // SIGMA out of range
+        "SECRET//WAIVED", // WAIVED requires SAP
+        "TOP SECRET//SAR-BP/GB/TC/XY/ZZ", // Too many SAP programs
+        "RESTRICTED//ORCON", // ORCON requires CONFIDENTIAL+
+        "CONFIDENTIAL//IMCON", // IMCON requires SECRET+
+        "SECRET//NOFORN/REL TO USA, CAN"); // NOFORN conflicts with REL TO
+  }
 
   // ==========================================================================
   // Assertion Helpers
