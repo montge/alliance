@@ -669,41 +669,384 @@ public class BannerValidatorTest {
   }
 
   // ==========================================================================
-  // SAP Controls Validation Tests (Para 7)
+  // SAP Controls Validation Tests (Para 7) - 8 tests
   // ==========================================================================
 
-  // TODO: testValidateSapControls_ValidSarSingleProgram() - Verify TOP SECRET//SAR-BP
-  // TODO: testValidateSapControls_ValidSarMultiplePrograms() - Verify TOP SECRET//SAR-BP/GB/TC
-  // TODO: testValidateSapControls_ValidSpecialAccessRequired() - Verify SPECIAL ACCESS REQUIRED
-  // spelling
-  // TODO: testValidateSapControls_ValidSarWithWaived() - Verify TOP SECRET//SAR-BP//WAIVED
-  // TODO: testValidateSapControls_InvalidTooManyPrograms() - Verify max 3 programs (para 7.e)
-  // TODO: testValidateSapControls_InvalidWaivedWithoutSap() - Verify WAIVED requires SAP (para
-  // 7.f)
-  // TODO: testValidateSapControls_ValidMultiplePrograms() - Verify SAR-MULTIPLE PROGRAMS
-  // TODO: testValidateSapControls_ValidHvsaco() - Verify SECRET//HVSACO
+  /**
+   * Test validation of valid SAR marking with single program.
+   *
+   * <p>Example: "TOP SECRET//SAR-BP"
+   *
+   * <p>Verifies that SAR (Special Access Required) with single program passes validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.a
+   */
+  @Test
+  public void testValidateSapControls_ValidSarSingleProgram() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("TOP SECRET//SAR-BP");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.TOP_SECRET));
+    assertThat(bannerMarkings.getSapControl(), is(notNullValue()));
+    assertThat(bannerMarkings.getSapControl().getPrograms(), hasSize(1));
+    assertThat(bannerMarkings.getSapControl().getPrograms().get(0), is("BP"));
+    assertThat(bannerMarkings.getSapControl().isMultiple(), is(false));
+  }
+
+  /**
+   * Test validation of valid SAR marking with multiple programs.
+   *
+   * <p>Example: "TOP SECRET//SAR-BP/GB/TC"
+   *
+   * <p>Verifies that SAR with multiple programs (up to 4) passes validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.d
+   */
+  @Test
+  public void testValidateSapControls_ValidSarMultiplePrograms() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("TOP SECRET//SAR-BP/GB/TC");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.TOP_SECRET));
+    assertThat(bannerMarkings.getSapControl(), is(notNullValue()));
+    assertThat(bannerMarkings.getSapControl().getPrograms(), hasSize(3));
+    assertThat(bannerMarkings.getSapControl().getPrograms(), containsInAnyOrder("BP", "GB", "TC"));
+    assertThat(bannerMarkings.getSapControl().isMultiple(), is(false));
+  }
+
+  /**
+   * Test validation of valid SAR marking with MULTIPLE PROGRAMS indicator.
+   *
+   * <p>Example: "SECRET//SAR-MULTIPLE PROGRAMS"
+   *
+   * <p>Verifies that SAR-MULTIPLE PROGRAMS passes validation when individual program names cannot
+   * be disclosed.
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.e
+   */
+  @Test
+  public void testValidateSapControls_ValidMultiplePrograms() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("SECRET//SAR-MULTIPLE PROGRAMS");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.SECRET));
+    assertThat(bannerMarkings.getSapControl(), is(notNullValue()));
+    assertThat(bannerMarkings.getSapControl().isMultiple(), is(true));
+    assertThat(bannerMarkings.getSapControl().getPrograms(), is(empty()));
+  }
+
+  /**
+   * Test validation of valid SAR marking with WAIVED dissemination control.
+   *
+   * <p>Example: "TOP SECRET//SAR-BP//WAIVED"
+   *
+   * <p>Verifies that SAR with WAIVED dissemination control passes validation. WAIVED is only valid
+   * with SAP markings.
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.f
+   */
+  @Test
+  public void testValidateSapControls_ValidSarWithWaived() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("TOP SECRET//SAR-BP//WAIVED");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.TOP_SECRET));
+    assertThat(bannerMarkings.getSapControl(), is(notNullValue()));
+    assertThat(bannerMarkings.getSapControl().getPrograms().get(0), is("BP"));
+    assertThat(bannerMarkings.getDisseminationControls(), contains(DissemControl.WAIVED));
+  }
+
+  /**
+   * Test validation of valid HVSACO marking.
+   *
+   * <p>Example: "SECRET//HVSACO"
+   *
+   * <p>Verifies that HVSACO (Humanitarian and Civic Assistance Operations) SAP marking passes
+   * validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.g
+   */
+  @Test
+  public void testValidateSapControls_ValidHvsaco() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("SECRET//HVSACO");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.SECRET));
+    assertThat(bannerMarkings.getSapControl(), is(notNullValue()));
+    assertThat(bannerMarkings.getSapControl().isHvsaco(), is(true));
+  }
+
+  /**
+   * Test validation error when more than 4 SAP programs are included.
+   *
+   * <p>Example: "TOP SECRET//SAR-BP/GB/TC/XY/ZZ" (INVALID)
+   *
+   * <p>Verifies that SAR with more than 4 programs fails validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.e
+   */
+  @Test(expected = MarkingsValidationException.class)
+  public void testValidateSapControls_InvalidTooManyPrograms() throws Exception {
+    BannerMarkings.parseMarkings("TOP SECRET//SAR-BP/GB/TC/XY/ZZ");
+  }
+
+  /**
+   * Test validation error when WAIVED is used without SAP.
+   *
+   * <p>Example: "SECRET//WAIVED" (INVALID)
+   *
+   * <p>Verifies that WAIVED dissemination control requires SAP marking.
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.f
+   */
+  @Test(expected = MarkingsValidationException.class)
+  public void testValidateSapControls_InvalidWaivedWithoutSap() throws Exception {
+    BannerMarkings.parseMarkings("SECRET//WAIVED");
+  }
+
+  /**
+   * Test validation of valid SAR with exactly 4 programs (boundary condition).
+   *
+   * <p>Example: "TOP SECRET//SAR-BP/GB/TC/XY"
+   *
+   * <p>Verifies that SAR with exactly 4 programs passes validation (maximum allowed).
+   *
+   * <p>Reference: DoD 5200.1-M, para 7.e
+   */
+  @Test
+  public void testValidateSapControls_ValidFourPrograms() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("TOP SECRET//SAR-BP/GB/TC/XY");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.TOP_SECRET));
+    assertThat(bannerMarkings.getSapControl(), is(notNullValue()));
+    assertThat(bannerMarkings.getSapControl().getPrograms(), hasSize(4));
+    assertThat(bannerMarkings.getSapControl().isMultiple(), is(false));
+  }
 
   // ==========================================================================
-  // AEA Markings Validation Tests (Para 8)
+  // AEA Markings Validation Tests (Para 8) - 13 tests
   // ==========================================================================
 
-  // TODO: testValidateAeaMarkings_ValidRestrictedData() - Verify TOP SECRET//RESTRICTED DATA
-  // TODO: testValidateAeaMarkings_ValidRdAbbreviation() - Verify SECRET//RD
-  // TODO: testValidateAeaMarkings_ValidRdCnwdi() - Verify SECRET//RD-N
-  // TODO: testValidateAeaMarkings_ValidRdSigma() - Verify TOP SECRET//RD-SIGMA 1 12 40
-  // TODO: testValidateAeaMarkings_ValidFormerlyRestrictedData() - Verify SECRET//FORMERLY
-  // RESTRICTED DATA
-  // TODO: testValidateAeaMarkings_ValidFrdSigma() - Verify CONFIDENTIAL//FRD-SIGMA 14
-  // TODO: testValidateAeaMarkings_ValidDodUcni() - Verify UNCLASSIFIED//DOD UNCLASSIFIED
-  // CONTROLLED NUCLEAR INFORMATION
-  // TODO: testValidateAeaMarkings_ValidDoeUcni() - Verify UNCLASSIFIED//DOE UNCLASSIFIED
-  // CONTROLLED NUCLEAR INFORMATION
-  // TODO: testValidateAeaMarkings_InvalidRdBelowConfidential() - Verify RD requires
-  // CONFIDENTIAL+ (para 8.a.4)
-  // TODO: testValidateAeaMarkings_InvalidFrdBelowConfidential() - Verify FRD requires
-  // CONFIDENTIAL+ (para 8.b.2)
-  // TODO: testValidateAeaMarkings_InvalidFrdWithCnwdi() - Verify FRD cannot have -N (para 8.c.3)
-  // TODO: testValidateAeaMarkings_InvalidFrdSigmaRange() - Verify FRD SIGMA 1-99 only (para 8.d.3)
+  /**
+   * Test validation of valid RD (Restricted Data) marking with full text.
+   *
+   * <p>Example: "TOP SECRET//RESTRICTED DATA"
+   *
+   * <p>Verifies that RESTRICTED DATA marking passes validation at TOP SECRET level.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.a.1
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidRestrictedData() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("TOP SECRET//RESTRICTED DATA");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.TOP_SECRET));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.RD));
+    assertThat(bannerMarkings.getAeaMarking().isCriticalNuclearWeaponDesignInformation(), is(false));
+  }
+
+  /**
+   * Test validation of valid RD marking with abbreviation.
+   *
+   * <p>Example: "SECRET//RD"
+   *
+   * <p>Verifies that RD abbreviation passes validation at SECRET level.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.a.2
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidRdAbbreviation() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("SECRET//RD");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.SECRET));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.RD));
+  }
+
+  /**
+   * Test validation of valid RD-N (RD with CNWDI) marking.
+   *
+   * <p>Example: "SECRET//RD-N"
+   *
+   * <p>Verifies that RD with Critical Nuclear Weapon Design Information (CNWDI) passes validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.c.1
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidRdCnwdi() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("SECRET//RD-N");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.SECRET));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.RD));
+    assertThat(bannerMarkings.getAeaMarking().isCriticalNuclearWeaponDesignInformation(), is(true));
+  }
+
+  /**
+   * Test validation of valid RD-SIGMA marking with multiple sigma values.
+   *
+   * <p>Example: "TOP SECRET//RD-SIGMA 1 12 40"
+   *
+   * <p>Verifies that RD with SIGMA designators passes validation. SIGMA values must be 1-99.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.d.1
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidRdSigma() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("TOP SECRET//RD-SIGMA 1 12 40");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.TOP_SECRET));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.RD));
+    assertThat(bannerMarkings.getAeaMarking().getSigmas(), hasSize(3));
+    assertThat(bannerMarkings.getAeaMarking().getSigmas(), containsInAnyOrder(1, 12, 40));
+  }
+
+  /**
+   * Test validation of valid FRD (Formerly Restricted Data) marking with full text.
+   *
+   * <p>Example: "SECRET//FORMERLY RESTRICTED DATA"
+   *
+   * <p>Verifies that FORMERLY RESTRICTED DATA marking passes validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.b.1
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidFormerlyRestrictedData() throws Exception {
+    BannerMarkings bannerMarkings =
+        BannerMarkings.parseMarkings("SECRET//FORMERLY RESTRICTED DATA");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.SECRET));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.FRD));
+  }
+
+  /**
+   * Test validation of valid FRD-SIGMA marking.
+   *
+   * <p>Example: "CONFIDENTIAL//FRD-SIGMA 14"
+   *
+   * <p>Verifies that FRD with SIGMA designator passes validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.d.2
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidFrdSigma() throws Exception {
+    BannerMarkings bannerMarkings = BannerMarkings.parseMarkings("CONFIDENTIAL//FRD-SIGMA 14");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.CONFIDENTIAL));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.FRD));
+    assertThat(bannerMarkings.getAeaMarking().getSigmas(), hasSize(1));
+    assertThat(bannerMarkings.getAeaMarking().getSigmas().get(0), is(14));
+  }
+
+  /**
+   * Test validation of valid DOD UCNI marking.
+   *
+   * <p>Example: "UNCLASSIFIED//DOD UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION"
+   *
+   * <p>Verifies that DOD Unclassified Controlled Nuclear Information passes validation. UCNI must
+   * be UNCLASSIFIED.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.f.1
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidDodUcni() throws Exception {
+    BannerMarkings bannerMarkings =
+        BannerMarkings.parseMarkings(
+            "UNCLASSIFIED//DOD UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.UNCLASSIFIED));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.DOD_UCNI));
+  }
+
+  /**
+   * Test validation of valid DOE UCNI marking.
+   *
+   * <p>Example: "UNCLASSIFIED//DOE UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION"
+   *
+   * <p>Verifies that DOE Unclassified Controlled Nuclear Information passes validation.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.f.2
+   */
+  @Test
+  public void testValidateAeaMarkings_ValidDoeUcni() throws Exception {
+    BannerMarkings bannerMarkings =
+        BannerMarkings.parseMarkings(
+            "UNCLASSIFIED//DOE UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION");
+
+    assertThat(bannerMarkings.getClassification(), is(ClassificationLevel.UNCLASSIFIED));
+    assertThat(bannerMarkings.getAeaMarking(), is(notNullValue()));
+    assertThat(bannerMarkings.getAeaMarking().getType(), is(AeaType.DOE_UCNI));
+  }
+
+  /**
+   * Test validation error when RD is used with classification below CONFIDENTIAL.
+   *
+   * <p>Example: "RESTRICTED//RD" (INVALID)
+   *
+   * <p>Verifies that RD requires at least CONFIDENTIAL classification.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.a.4
+   */
+  @Test(expected = MarkingsValidationException.class)
+  public void testValidateAeaMarkings_InvalidRdBelowConfidential() throws Exception {
+    BannerMarkings.parseMarkings("RESTRICTED//RD");
+  }
+
+  /**
+   * Test validation error when FRD is used with classification below CONFIDENTIAL.
+   *
+   * <p>Example: "RESTRICTED//FRD" (INVALID)
+   *
+   * <p>Verifies that FRD requires at least CONFIDENTIAL classification.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.b.2
+   */
+  @Test(expected = MarkingsValidationException.class)
+  public void testValidateAeaMarkings_InvalidFrdBelowConfidential() throws Exception {
+    BannerMarkings.parseMarkings("RESTRICTED//FRD");
+  }
+
+  /**
+   * Test validation error when FRD is used with CNWDI (-N).
+   *
+   * <p>Example: "SECRET//FRD-N" (INVALID)
+   *
+   * <p>Verifies that CNWDI is a subset of RD and not applicable to FRD documents.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.c.3
+   */
+  @Test(expected = MarkingsValidationException.class)
+  public void testValidateAeaMarkings_InvalidFrdWithCnwdi() throws Exception {
+    BannerMarkings.parseMarkings("SECRET//FRD-N");
+  }
+
+  /**
+   * Test validation error when SIGMA value is out of range (above 99).
+   *
+   * <p>Example: "SECRET//RD-SIGMA 150" (INVALID)
+   *
+   * <p>Verifies that SIGMA values must be in range 1-99 inclusive.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.d.3
+   */
+  @Test(expected = MarkingsValidationException.class)
+  public void testValidateAeaMarkings_InvalidSigmaAbove99() throws Exception {
+    BannerMarkings.parseMarkings("SECRET//RD-SIGMA 150");
+  }
+
+  /**
+   * Test validation error when SIGMA value is out of range (below 1).
+   *
+   * <p>Example: "SECRET//FRD-SIGMA 0" (INVALID)
+   *
+   * <p>Verifies that SIGMA values must be in range 1-99 inclusive.
+   *
+   * <p>Reference: DoD 5200.1-M, para 8.d.3
+   */
+  @Test(expected = MarkingsValidationException.class)
+  public void testValidateAeaMarkings_InvalidSigmaBelow1() throws Exception {
+    BannerMarkings.parseMarkings("SECRET//FRD-SIGMA 0");
+  }
 
   // ==========================================================================
   // FGI (Foreign Government Information) Validation Tests (10 tests)
